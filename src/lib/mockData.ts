@@ -32,3 +32,27 @@ export const mockUsers: AppUser[] = [
 
 // "Utilisateur connecté" simulé — change cette valeur pour basculer la vue
 export const currentMockUser: AppUser = mockUsers[0]; // admin par défaut
+
+// Ventes factices par boutique (maquette)
+export interface Vente {
+  id: string;
+  boutique_id: string;
+  montant: number; // en FCFA
+  date: string; // ISO
+}
+
+const today = new Date();
+const d = (offset: number) => new Date(today.getTime() - offset * 86400000).toISOString();
+
+export const mockVentes: Vente[] = [
+  { id: "v1", boutique_id: "b1", montant: 45000, date: d(0) },
+  { id: "v2", boutique_id: "b1", montant: 78000, date: d(1) },
+  { id: "v3", boutique_id: "b2", montant: 120000, date: d(0) },
+  { id: "v4", boutique_id: "b2", montant: 32000, date: d(2) },
+  { id: "v5", boutique_id: "b3", montant: 56000, date: d(1) },
+  { id: "v6", boutique_id: "b1", montant: 89000, date: d(3) },
+  { id: "v7", boutique_id: "b3", montant: 145000, date: d(0) },
+  { id: "v8", boutique_id: "b2", montant: 67000, date: d(4) },
+  { id: "v9", boutique_id: "b1", montant: 34000, date: d(5) },
+  { id: "v10", boutique_id: "b3", montant: 92000, date: d(2) },
+];

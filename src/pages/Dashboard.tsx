@@ -4,9 +4,12 @@ import { Card } from "@/components/ui/card";
 import AppHeader from "@/components/AppHeader";
 import BoutiquesManager from "@/components/BoutiquesManager";
 import UsersManager from "@/components/UsersManager";
+import StatsCards from "@/components/StatsCards";
+import VentesParBoutique from "@/components/VentesParBoutique";
 import {
   mockBoutiques,
   mockUsers,
+  mockVentes,
   currentMockUser,
   type AppUser,
   type Boutique,
@@ -16,6 +19,7 @@ import {
 const Dashboard = () => {
   const [boutiques, setBoutiques] = useState<Boutique[]>(mockBoutiques);
   const [users, setUsers] = useState<AppUser[]>(mockUsers);
+  const [ventes] = useState(mockVentes);
   const [currentUser, setCurrentUser] = useState<AppUser>(currentMockUser);
 
   const currentBoutiqueName = useMemo(
@@ -59,6 +63,8 @@ const Dashboard = () => {
 
         {isAdmin ? (
           <>
+            <StatsCards users={users} boutiques={boutiques} ventes={ventes} />
+            <VentesParBoutique boutiques={boutiques} ventes={ventes} />
             <BoutiquesManager boutiques={boutiques} setBoutiques={setBoutiques} />
             <UsersManager users={users} setUsers={setUsers} boutiques={boutiques} />
           </>
