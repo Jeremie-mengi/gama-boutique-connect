@@ -1,16 +1,16 @@
 import { LogOut, Sparkles } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import { useNavigate, Link } from "react-router-dom";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { AppUser, Role } from "@/lib/mockData";
 
-const AppHeader = () => {
-  const { user, role, signOut } = useAuth();
+interface Props {
+  user: AppUser;
+  onSwitchRole: (role: Role) => void;
+}
+
+const AppHeader = ({ user, onSwitchRole }: Props) => {
   const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
-  };
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-40">
@@ -20,27 +20,34 @@ const AppHeader = () => {
             <Sparkles className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <div className="font-display font-bold text-lg leading-none">GAMA</div>
+            <div className="font-bold text-lg leading-none">GAMA</div>
             <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Boutique</div>
           </div>
         </Link>
 
-        {user && (
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex flex-col items-end">
-              <span className="text-sm font-medium">{user.email}</span>
-              {role && (
-                <span className="text-[10px] uppercase tracking-wider text-primary font-semibold">
-                  {role}
-                </span>
-              )}
-            </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4" />
-              Déconnexion
-            </Button>
+        <div className="flex items-center gap-3">
+          {/* Switch maquette pour basculer admin / vendeur */}
+          <Select value={user.role} onValueChange={(v) => onSwitchRole(v as Role)}>
+            <SelectTrigger className="w-[130px] h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="vendeur">Vendeur</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="hidden sm:flex flex-col items-end">
+            <span className="text-sm font-medium">{user.full_name}</span>
+            <span className="text-[10px] uppercase tracking-wider text-primary font-semibold">
+              {user.role}
+            </span>
           </div>
-        )}
+          <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
+            <LogOut className="h-4 w-4" />
+            Quitter
+          </Button>
+        </div>
       </div>
     </header>
   );
