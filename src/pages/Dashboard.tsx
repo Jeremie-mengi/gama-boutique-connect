@@ -24,10 +24,11 @@ const Dashboard = () => {
         .select("full_name, boutiques(nom)")
         .eq("id", user.id)
         .maybeSingle();
+      const boutiques = data?.boutiques as { nom: string } | { nom: string }[] | null | undefined;
+      const boutiqueNom = Array.isArray(boutiques) ? boutiques[0]?.nom ?? null : boutiques?.nom ?? null;
       setInfo({
         full_name: data?.full_name ?? null,
-        // @ts-expect-error nested select
-        boutique_nom: data?.boutiques?.nom ?? null,
+        boutique_nom: boutiqueNom,
       });
     })();
   }, [user]);
