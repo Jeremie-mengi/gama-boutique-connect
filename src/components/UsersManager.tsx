@@ -1,92 +1,126 @@
-import { useEffect, useState } from "react";
-import { Users, Shield } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { Plus, Users, Shield } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import type { AppUser, Boutique, Role } from "@/lib/mockData";
 
-interface ProfileRow {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-  boutique_id: string | null;
+interface Props {
+  users: AppUser[];
+  setUsers: React.Dispatch<React.SetStateAction<AppUser[]>>;
+  boutiques: Boutique[];
 }
-interface BoutiqueOpt { id: string; nom: string; }
-interface RoleRow { user_id: string; role: "admin" | "vendeur"; }
 
-const UsersManager = () => {
-  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
-  const [boutiques, setBoutiques] = useState<BoutiqueOpt[]>([]);
-  const [roles, setRoles] = useState<Record<string, ("admin" | "vendeur")[]>>({});
-  const [loading, setLoading] = useState(true);
+const UsersManager = ({ users, setUsers, boutiques }: Props) => {
+  const [open, setOpen] = useState(false);
+  const [newRole, setNewRole] = useState<Role>("vendeur");
+  const [newBoutique, setNewBoutique] = useState<string>("none");
 
-  const fetchAll = async () => {
-    setLoading(true);
-    const [{ data: pr }, { data: bo }, { data: ro }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, email, boutique_id").order("created_at", { ascending: false }),
-      supabase.from("boutiques").select("id, nom").order("nom"),
-      supabase.from("user_roles").select("user_id, role"),
+  const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const full_name = String(fd.get("full_name") ?? "").trim();
+    const email = String(fd.get("email") ?? "").trim();
+    if (!full_name || !email) {
+      toast.error("Nom et email requis");
+      return;
+    }
+    setUsers((prev) => [
+      {
+        id: crypto.randomUUID(),
+        full_name,
+        email,
+        role: newRole,
+        boutique_id: newBoutique === "none" ? null : newBoutique,
+      },
+      ...prev,
     ]);
-    setProfiles(pr ?? []);
-    setBoutiques(bo ?? []);
-    const map: Record<string, ("admin" | "vendeur")[]> = {};
-    (ro as RoleRow[] | null)?.forEach((r) => {
-      map[r.user_id] = [...(map[r.user_id] ?? []), r.role];
-    });
-    setRoles(map);
-    setLoading(false);
+    toast.success("Utilisateur créé");
+    setOpen(false);
+    setNewRole("vendeur");
+    setNewBoutique("none");
   };
 
-  useEffect(() => { fetchAll(); }, []);
-
-  const assignBoutique = async (userId: string, boutiqueId: string) => {
-    const value = boutiqueId === "none" ? null : boutiqueId;
-    const { error } = await supabase.from("profiles").update({ boutique_id: value }).eq("id", userId);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Boutique assignée");
-      fetchAll();
-    }
+  const updateUser = (id: string, patch: Partial<AppUser>) => {
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
   };
 
-  const changeRole = async (userId: string, newRole: "admin" | "vendeur") => {
-    // Supprimer rôles existants puis insérer nouveau
-    await supabase.from("user_roles").delete().eq("user_id", userId);
-    const { error } = await supabase.from("user_roles").insert({ user_id: userId, role: newRole });
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Rôle mis à jour");
-      fetchAll();
-    }
-  };
-
-  const primaryRole = (uid: string): "admin" | "vendeur" => {
-    const r = roles[uid] ?? [];
-    return r.includes("admin") ? "admin" : "vendeur";
-  };
+  const boutiqueName = (id: string | null) =>
+    boutiques.find((b) => b.id === id)?.nom ?? "—";
 
   return (
     <Card className="p-6 shadow-card border-border/60">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Users className="h-5 w-5 text-primary" />
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Users className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="font-bold text-xl">Utilisateurs</h2>
+            <p className="text-sm text-muted-foreground">
+              {users.length} membre{users.length > 1 ? "s" : ""} · liés à une boutique
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-display font-bold text-xl">Utilisateurs</h2>
-          <p className="text-sm text-muted-foreground">
-            {profiles.length} membre{profiles.length > 1 ? "s" : ""} · invitez-les à s'inscrire puis assignez leur boutique
-          </p>
-        </div>
+
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button variant="hero">
+              <Plus className="h-4 w-4" />
+              Nouvel utilisateur
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nouvel utilisateur</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Nom complet *</Label>
+                <Input id="full_name" name="full_name" required placeholder="Aïcha Diallo" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input id="email" name="email" type="email" required placeholder="aicha@gama.com" />
+              </div>
+              <div className="space-y-2">
+                <Label>Rôle</Label>
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as Role)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="vendeur">Vendeur</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Boutique</Label>
+                <Select value={newBoutique} onValueChange={setNewBoutique}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucune</SelectItem>
+                    {boutiques.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>{b.nom}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <Button type="submit" variant="hero">Créer</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {loading ? (
-        <p className="text-muted-foreground text-sm">Chargement...</p>
-      ) : profiles.length === 0 ? (
-        <p className="text-muted-foreground text-sm py-8 text-center">Aucun utilisateur pour le moment.</p>
+      {users.length === 0 ? (
+        <p className="text-muted-foreground text-sm py-8 text-center">Aucun utilisateur.</p>
       ) : (
         <div className="overflow-x-auto">
           <Table>
@@ -99,47 +133,46 @@ const UsersManager = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {profiles.map((p) => {
-                const role = primaryRole(p.id);
-                return (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.full_name || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{p.email}</TableCell>
-                    <TableCell>
-                      <Select value={role} onValueChange={(v) => changeRole(p.id, v as "admin" | "vendeur")}>
-                        <SelectTrigger className="w-[140px]">
-                          <SelectValue>
-                            <Badge variant={role === "admin" ? "default" : "secondary"} className="gap-1">
-                              {role === "admin" && <Shield className="h-3 w-3" />}
-                              {role}
-                            </Badge>
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="vendeur">Vendeur</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={p.boutique_id ?? "none"}
-                        onValueChange={(v) => assignBoutique(p.id, v)}
-                      >
-                        <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder="Aucune" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Aucune</SelectItem>
-                          {boutiques.map((b) => (
-                            <SelectItem key={b.id} value={b.id}>{b.nom}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {users.map((u) => (
+                <TableRow key={u.id}>
+                  <TableCell className="font-medium">{u.full_name}</TableCell>
+                  <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                  <TableCell>
+                    <Select value={u.role} onValueChange={(v) => updateUser(u.id, { role: v as Role })}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue>
+                          <Badge variant={u.role === "admin" ? "default" : "secondary"} className="gap-1">
+                            {u.role === "admin" && <Shield className="h-3 w-3" />}
+                            {u.role}
+                          </Badge>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="vendeur">Vendeur</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={u.boutique_id ?? "none"}
+                      onValueChange={(v) =>
+                        updateUser(u.id, { boutique_id: v === "none" ? null : v })
+                      }
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue>{boutiqueName(u.boutique_id)}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Aucune</SelectItem>
+                        {boutiques.map((b) => (
+                          <SelectItem key={b.id} value={b.id}>{b.nom}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
