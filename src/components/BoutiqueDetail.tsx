@@ -93,10 +93,10 @@ const BoutiqueDetail = ({ boutique, ventes, articles }: Props) => {
                       <TableCell className="font-medium">{a.nom}</TableCell>
                       <TableCell><Badge variant="outline">{a.categorie}</Badge></TableCell>
                       <TableCell className="text-right">
-                        <span className={a.stock <= 6 ? "text-rose-400 font-semibold" : ""}>{a.stock}</span>
+                        <span className={a.quantiteRestante <= 6 ? "text-rose-400 font-semibold" : ""}>{a.quantiteRestante}</span>
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">{fmt(a.prix)}</TableCell>
-                      <TableCell className="text-right font-semibold">{fmt(a.stock * a.prix)}</TableCell>
+                      <TableCell className="text-right font-semibold">{fmt(a.quantiteRestante * a.prix)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

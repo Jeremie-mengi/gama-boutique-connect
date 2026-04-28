@@ -30,15 +30,14 @@ export const mockUsers: AppUser[] = [
   { id: "u4", full_name: "Ismaël Touré", email: "ismael@gama.com", role: "vendeur", boutique_id: null },
 ];
 
-// "Utilisateur connecté" simulé — change cette valeur pour basculer la vue
-export const currentMockUser: AppUser = mockUsers[0]; // admin par défaut
+export const currentMockUser: AppUser = mockUsers[0];
 
-// Ventes factices par boutique (maquette)
+// Ventes
 export interface Vente {
   id: string;
   boutique_id: string;
-  montant: number; // en FCFA
-  date: string; // ISO
+  montant: number;
+  date: string;
   article: string;
   quantite: number;
 }
@@ -59,7 +58,7 @@ export const mockVentes: Vente[] = [
   { id: "v10", boutique_id: "b3", montant: 92000, date: d(2), article: "Sneakers édition", quantite: 1 },
 ];
 
-// Dépenses (sorties) par boutique
+// Dépenses
 export interface Depense {
   id: string;
   boutique_id: string;
@@ -78,25 +77,108 @@ export const mockDepenses: Depense[] = [
   { id: "dp6", boutique_id: "b3", libelle: "Publicité Instagram", montant: 40000, date: d(5), categorie: "autre" },
 ];
 
-// Articles d'inventaire par boutique
+// Articles enrichis
+export type Categorie = "PRET_A_PORTER" | "ACCESSOIRE" | "CHAUSSURE" | "TRADITIONNEL" | "AUTRE";
+export type StatutArticle = "EN_STOCK" | "RUPTURE" | "RESERVE" | "RETIRE";
+
+export const CATEGORIES: { value: Categorie; label: string }[] = [
+  { value: "PRET_A_PORTER", label: "Prêt-à-porter" },
+  { value: "ACCESSOIRE", label: "Accessoire" },
+  { value: "CHAUSSURE", label: "Chaussure" },
+  { value: "TRADITIONNEL", label: "Traditionnel" },
+  { value: "AUTRE", label: "Autre" },
+];
+
+export const STATUTS: { value: StatutArticle; label: string }[] = [
+  { value: "EN_STOCK", label: "En stock" },
+  { value: "RUPTURE", label: "Rupture" },
+  { value: "RESERVE", label: "Réservé" },
+  { value: "RETIRE", label: "Retiré" },
+];
+
+export interface Promotion {
+  id: string;
+  libelle: string;
+  pourcentage: number; // 0-100
+  dateDebut: string;
+  dateFin: string;
+}
+
 export interface Article {
   id: string;
   boutique_id: string;
+  code: string;
   nom: string;
-  categorie: string;
-  stock: number;
+  description?: string | null;
+  photo?: string | null;
+  categorie: Categorie;
+  couleur: string;
+  observation?: string | null;
+  statut: StatutArticle;
+  taille?: string | null;
+  serie?: string | null;
+  demiSerie: boolean;
   prix: number;
-  date_ajout: string;
+  quantiteEntree: number;
+  quantiteVendue: number;
+  quantiteRestante: number;
+  dateEntreeStock: string;
+  promotions: Promotion[];
 }
 
 export const mockArticles: Article[] = [
-  { id: "a1", boutique_id: "b1", nom: "Chemise lin blanc", categorie: "Homme", stock: 24, prix: 22500, date_ajout: d(10) },
-  { id: "a2", boutique_id: "b1", nom: "Veste cuir noir", categorie: "Homme", stock: 6, prix: 78000, date_ajout: d(8) },
-  { id: "a3", boutique_id: "b1", nom: "Polo coton GAMA", categorie: "Homme", stock: 40, prix: 12500, date_ajout: d(3) },
-  { id: "a4", boutique_id: "b2", nom: "Robe soirée dorée", categorie: "Femme", stock: 8, prix: 60000, date_ajout: d(12) },
-  { id: "a5", boutique_id: "b2", nom: "Ensemble bogolan", categorie: "Femme", stock: 15, prix: 67000, date_ajout: d(6) },
-  { id: "a6", boutique_id: "b2", nom: "T-shirt premium", categorie: "Unisexe", stock: 32, prix: 8000, date_ajout: d(2) },
-  { id: "a7", boutique_id: "b3", nom: "Manteau laine", categorie: "Femme", stock: 4, prix: 145000, date_ajout: d(15) },
-  { id: "a8", boutique_id: "b3", nom: "Jean slim", categorie: "Unisexe", stock: 22, prix: 28000, date_ajout: d(7) },
-  { id: "a9", boutique_id: "b3", nom: "Sneakers édition", categorie: "Unisexe", stock: 11, prix: 92000, date_ajout: d(4) },
+  {
+    id: "a1", boutique_id: "b1", code: "CHM-001", nom: "Chemise lin blanc", categorie: "PRET_A_PORTER",
+    couleur: "Blanc", taille: "L", serie: "Été 2026", demiSerie: false, statut: "EN_STOCK",
+    prix: 22500, quantiteEntree: 30, quantiteVendue: 6, quantiteRestante: 24, dateEntreeStock: d(10),
+    promotions: [{ id: "p1", libelle: "Soldes été", pourcentage: 15, dateDebut: d(5), dateFin: d(-10) }],
+  },
+  {
+    id: "a2", boutique_id: "b1", code: "VES-014", nom: "Veste cuir noir", categorie: "PRET_A_PORTER",
+    couleur: "Noir", taille: "M", serie: null, demiSerie: false, statut: "EN_STOCK",
+    prix: 78000, quantiteEntree: 10, quantiteVendue: 4, quantiteRestante: 6, dateEntreeStock: d(8),
+    promotions: [],
+  },
+  {
+    id: "a3", boutique_id: "b1", code: "POL-007", nom: "Polo coton GAMA", categorie: "PRET_A_PORTER",
+    couleur: "Orange", taille: "XL", serie: "Capsule", demiSerie: true, statut: "EN_STOCK",
+    prix: 12500, quantiteEntree: 50, quantiteVendue: 10, quantiteRestante: 40, dateEntreeStock: d(3),
+    promotions: [],
+  },
+  {
+    id: "a4", boutique_id: "b2", code: "ROB-022", nom: "Robe soirée dorée", categorie: "PRET_A_PORTER",
+    couleur: "Doré", taille: "S", serie: "Gala", demiSerie: false, statut: "EN_STOCK",
+    prix: 60000, quantiteEntree: 12, quantiteVendue: 4, quantiteRestante: 8, dateEntreeStock: d(12),
+    promotions: [],
+  },
+  {
+    id: "a5", boutique_id: "b2", code: "ENS-031", nom: "Ensemble bogolan", categorie: "TRADITIONNEL",
+    couleur: "Indigo", taille: "M", serie: null, demiSerie: false, statut: "EN_STOCK",
+    prix: 67000, quantiteEntree: 20, quantiteVendue: 5, quantiteRestante: 15, dateEntreeStock: d(6),
+    promotions: [{ id: "p2", libelle: "Promo Tabaski", pourcentage: 10, dateDebut: d(2), dateFin: d(-5) }],
+  },
+  {
+    id: "a6", boutique_id: "b2", code: "TSH-099", nom: "T-shirt premium", categorie: "PRET_A_PORTER",
+    couleur: "Blanc", taille: "L", serie: null, demiSerie: false, statut: "EN_STOCK",
+    prix: 8000, quantiteEntree: 40, quantiteVendue: 8, quantiteRestante: 32, dateEntreeStock: d(2),
+    promotions: [],
+  },
+  {
+    id: "a7", boutique_id: "b3", code: "MNT-003", nom: "Manteau laine", categorie: "PRET_A_PORTER",
+    couleur: "Camel", taille: "M", serie: "Hiver", demiSerie: false, statut: "EN_STOCK",
+    prix: 145000, quantiteEntree: 6, quantiteVendue: 2, quantiteRestante: 4, dateEntreeStock: d(15),
+    promotions: [],
+  },
+  {
+    id: "a8", boutique_id: "b3", code: "JEA-045", nom: "Jean slim", categorie: "PRET_A_PORTER",
+    couleur: "Bleu", taille: "32", serie: null, demiSerie: false, statut: "EN_STOCK",
+    prix: 28000, quantiteEntree: 30, quantiteVendue: 8, quantiteRestante: 22, dateEntreeStock: d(7),
+    promotions: [],
+  },
+  {
+    id: "a9", boutique_id: "b3", code: "SNK-Ed1", nom: "Sneakers édition", categorie: "CHAUSSURE",
+    couleur: "Noir/Orange", taille: "42", serie: "Édition limitée", demiSerie: false, statut: "EN_STOCK",
+    prix: 92000, quantiteEntree: 15, quantiteVendue: 4, quantiteRestante: 11, dateEntreeStock: d(4),
+    promotions: [],
+  },
 ];
