@@ -6,10 +6,17 @@ import BoutiquesManager from "@/components/BoutiquesManager";
 import UsersManager from "@/components/UsersManager";
 import StatsCards from "@/components/StatsCards";
 import VentesParBoutique from "@/components/VentesParBoutique";
+import BoutiqueSelector from "@/components/BoutiqueSelector";
+import VentesTable from "@/components/VentesTable";
+import FinancesPanel from "@/components/FinancesPanel";
+import InventairePanel from "@/components/InventairePanel";
+import BoutiqueDetail from "@/components/BoutiqueDetail";
 import {
   mockBoutiques,
   mockUsers,
   mockVentes,
+  mockDepenses,
+  mockArticles,
   currentMockUser,
   type AppUser,
   type Boutique,
@@ -20,15 +27,44 @@ const Dashboard = () => {
   const [boutiques, setBoutiques] = useState<Boutique[]>(mockBoutiques);
   const [users, setUsers] = useState<AppUser[]>(mockUsers);
   const [ventes] = useState(mockVentes);
+  const [depenses] = useState(mockDepenses);
+  const [articles] = useState(mockArticles);
   const [currentUser, setCurrentUser] = useState<AppUser>(currentMockUser);
+  const [selectedBoutique, setSelectedBoutique] = useState<string>("all");
 
   const currentBoutiqueName = useMemo(
     () => boutiques.find((b) => b.id === currentUser.boutique_id)?.nom ?? null,
     [boutiques, currentUser]
   );
 
+  // Filtrage selon la boutique sélectionnée
+  const isAll = selectedBoutique === "all";
+  const fVentes = useMemo(
+    () => (isAll ? ventes : ventes.filter((v) => v.boutique_id === selectedBoutique)),
+    [ventes, selectedBoutique, isAll]
+  );
+  const fDepenses = useMemo(
+    () => (isAll ? depenses : depenses.filter((d) => d.boutique_id === selectedBoutique)),
+    [depenses, selectedBoutique, isAll]
+  );
+  const fArticles = useMemo(
+    () => (isAll ? articles : articles.filter((a) => a.boutique_id === selectedBoutique)),
+    [articles, selectedBoutique, isAll]
+  );
+  const fUsers = useMemo(
+    () => (isAll ? users : users.filter((u) => u.boutique_id === selectedBoutique || u.role === "admin")),
+    [users, selectedBoutique, isAll]
+  );
+  const fBoutiques = useMemo(
+    () => (isAll ? boutiques : boutiques.filter((b) => b.id === selectedBoutique)),
+    [boutiques, selectedBoutique, isAll]
+  );
+  const selectedBoutiqueObj = useMemo(
+    () => (isAll ? null : boutiques.find((b) => b.id === selectedBoutique) ?? null),
+    [boutiques, selectedBoutique, isAll]
+  );
+
   const handleSwitchRole = (role: Role) => {
-    // Bascule la vue maquette : prend le 1er user du rôle choisi
     const target = users.find((u) => u.role === role) ?? currentUser;
     setCurrentUser(target);
   };
@@ -53,7 +89,7 @@ const Dashboard = () => {
             </h1>
             <p className="text-muted-foreground max-w-xl">
               {isAdmin
-                ? "Pilotez vos boutiques GAMA, créez vos équipes et attribuez-leur leur point de vente."
+                ? "Pilotez vos boutiques GAMA, suivez vos finances et votre inventaire."
                 : currentBoutiqueName
                   ? `Vous gérez la boutique « ${currentBoutiqueName} ».`
                   : "Aucune boutique ne vous est encore assignée."}
@@ -63,8 +99,34 @@ const Dashboard = () => {
 
         {isAdmin ? (
           <>
-            <StatsCards users={users} boutiques={boutiques} ventes={ventes} />
-            <VentesParBoutique boutiques={boutiques} ventes={ventes} />
+            <BoutiqueSelector
+              boutiques={boutiques}
+              value={selectedBoutique}
+              onChange={setSelectedBoutique}
+            />
+
+            <StatsCards users={fUsers} boutiques={fBoutiques} ventes={fVentes} />
+
+            <VentesParBoutique boutiques={fBoutiques} ventes={fVentes} />
+
+            {/* Vue dédiée d'une boutique : 2 sections (ventes + articles) */}
+            {selectedBoutiqueObj && (
+              <BoutiqueDetail
+                boutique={selectedBoutiqueObj}
+                ventes={ventes}
+                articles={articles}
+              />
+            )}
+
+            {/* Tableau global des ventes (filtré) */}
+            <VentesTable boutiques={boutiques} ventes={fVentes} />
+
+            {/* Finances : entrées / sorties */}
+            <FinancesPanel boutiques={boutiques} ventes={fVentes} depenses={fDepenses} />
+
+            {/* Inventaire avec période */}
+            <InventairePanel boutiques={boutiques} articles={fArticles} />
+
             <BoutiquesManager boutiques={boutiques} setBoutiques={setBoutiques} />
             <UsersManager users={users} setUsers={setUsers} boutiques={boutiques} />
           </>
