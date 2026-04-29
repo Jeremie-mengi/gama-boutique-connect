@@ -44,7 +44,7 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
       code: "", nom: "", description: "", photo: "",
       categorie: "PRET_A_PORTER", couleur: "", observation: "",
       statut: "EN_STOCK", taille: "", serie: "", demiSerie: false,
-      prix: 0, quantiteEntree: 0,
+      prix: 0, devise: "CDF", quantiteEntree: 0,
     });
     setPromos([]);
   };
