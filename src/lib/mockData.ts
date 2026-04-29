@@ -147,6 +147,7 @@ export interface Article {
   serie?: string | null;
   demiSerie: boolean;
   prix: number;
+  devise?: Devise;
   quantiteEntree: number;
   quantiteVendue: number;
   quantiteRestante: number;
