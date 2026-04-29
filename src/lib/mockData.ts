@@ -95,12 +95,14 @@ export interface Depense {
 }
 
 export const mockDepenses: Depense[] = [
-  { id: "dp1", boutique_id: "b1", libelle: "Loyer mensuel", montant: 150000, date: d(2), categorie: "loyer" },
-  { id: "dp2", boutique_id: "b1", libelle: "Réassort tissus", montant: 80000, date: d(4), categorie: "achat" },
-  { id: "dp3", boutique_id: "b2", libelle: "Salaire vendeuse", montant: 120000, date: d(1), categorie: "salaire" },
-  { id: "dp4", boutique_id: "b2", libelle: "Sacs emballage", montant: 25000, date: d(3), categorie: "achat" },
-  { id: "dp5", boutique_id: "b3", libelle: "Loyer mensuel", montant: 180000, date: d(2), categorie: "loyer" },
-  { id: "dp6", boutique_id: "b3", libelle: "Publicité Instagram", montant: 40000, date: d(5), categorie: "autre" },
+  { id: "dp1", boutique_id: "b1", libelle: "Loyer mensuel", montant: 150000, devise: "CDF", date: d(2), categorie: "loyer", type: "sortie" },
+  { id: "dp2", boutique_id: "b1", libelle: "Réassort tissus", montant: 80, devise: "USD", date: d(4), categorie: "achat", type: "sortie" },
+  { id: "dp3", boutique_id: "b2", libelle: "Salaire vendeuse", montant: 120000, devise: "CDF", date: d(1), categorie: "salaire", type: "sortie" },
+  { id: "dp4", boutique_id: "b2", libelle: "Sacs emballage", montant: 25, devise: "EUR", date: d(3), categorie: "achat", type: "sortie" },
+  { id: "dp5", boutique_id: "b3", libelle: "Loyer mensuel", montant: 180000, devise: "CDF", date: d(2), categorie: "loyer", type: "sortie" },
+  { id: "dp6", boutique_id: "b3", libelle: "Publicité Instagram", montant: 40, devise: "USD", date: d(5), categorie: "autre", type: "sortie" },
+  { id: "dp7", boutique_id: "b1", libelle: "Apport associé", montant: 500, devise: "USD", date: d(6), categorie: "autre", type: "entree" },
+  { id: "dp8", boutique_id: "b2", libelle: "Remboursement client", montant: 50, devise: "EUR", date: d(7), categorie: "autre", type: "entree" },
 ];
 
 // Articles enrichis
