@@ -130,6 +130,7 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
                 <TableHead>Email</TableHead>
                 <TableHead>Rôle</TableHead>
                 <TableHead>Boutique</TableHead>
+                <TableHead>Dossier de l'agent</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -171,6 +172,9 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
                       </SelectContent>
                     </Select>
                   </TableCell>
+                  <TableCell>
+                    <DossierCell user={u} onUpdate={(d) => updateUser(u.id, { dossier: d })} />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -178,6 +182,54 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
         </div>
       )}
     </Card>
+  );
+};
+
+const DossierCell = ({ user, onUpdate }: { user: AppUser; onUpdate: (d: DossierFile | null) => void }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dossier = user.dossier;
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    onUpdate({
+      name: f.name,
+      size: f.size,
+      type: f.type,
+      uploadedAt: new Date().toISOString(),
+    });
+    toast.success(`Dossier de ${user.full_name} uploadé`);
+    e.target.value = "";
+  };
+
+  const fmtSize = (b: number) => b < 1024 ? `${b} o` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} Ko` : `${(b / 1024 / 1024).toFixed(1)} Mo`;
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip"
+        onChange={handleFile}
+      />
+      {dossier ? (
+        <div className="flex items-center gap-2 rounded-md border border-border/60 bg-card/40 px-2 py-1 max-w-[220px]">
+          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-medium truncate" title={dossier.name}>{dossier.name}</div>
+            <div className="text-[10px] text-muted-foreground">{fmtSize(dossier.size)}</div>
+          </div>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { onUpdate(null); toast.success("Dossier retiré"); }}>
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      ) : (
+        <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
+          <Upload className="h-3.5 w-3.5" /> Uploader
+        </Button>
+      )}
+    </div>
   );
 };
 
