@@ -177,10 +177,19 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label>Prix unitaire (F)</Label>
+              <Label>Prix de vente</Label>
               <Input type="number" min={0} value={form.prix} onChange={(e) => setForm({ ...form, prix: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Devise</Label>
+              <Select value={form.devise} onValueChange={(v) => setForm({ ...form, devise: v as Devise })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DEVISES.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Quantité entrée</Label>
