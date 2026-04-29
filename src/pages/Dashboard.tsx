@@ -157,7 +157,7 @@ const Dashboard = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <AppSidebar active={section} onChange={setSection} />
+        <AppSidebar active={section} onChange={(k) => { setSection(k); setOpenedBoutiqueId(null); }} />
 
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-16 border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-40 flex items-center px-4 gap-3">
