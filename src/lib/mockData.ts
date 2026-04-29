@@ -2,11 +2,31 @@
 
 export type Role = "admin" | "vendeur";
 
+export type Devise = "USD" | "CDF" | "EUR";
+
+export const DEVISES: { value: Devise; label: string; symbol: string }[] = [
+  { value: "USD", label: "USD ($)", symbol: "$" },
+  { value: "CDF", label: "CDF (FC)", symbol: "FC" },
+  { value: "EUR", label: "EUR (€)", symbol: "€" },
+];
+
+export const formatMoney = (amount: number, devise: Devise = "CDF") => {
+  const sym = DEVISES.find((d) => d.value === devise)?.symbol ?? "";
+  return `${new Intl.NumberFormat("fr-FR").format(amount)} ${sym}`;
+};
+
 export interface Boutique {
   id: string;
   nom: string;
   adresse: string | null;
   telephone: string | null;
+}
+
+export interface DossierFile {
+  name: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
 }
 
 export interface AppUser {
@@ -15,6 +35,7 @@ export interface AppUser {
   email: string;
   role: Role;
   boutique_id: string | null;
+  dossier?: DossierFile | null;
 }
 
 export const mockBoutiques: Boutique[] = [
