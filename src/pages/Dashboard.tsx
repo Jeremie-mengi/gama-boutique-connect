@@ -15,6 +15,7 @@ import VentesTable from "@/components/VentesTable";
 import FinancesPanel from "@/components/FinancesPanel";
 import InventaireSection from "@/components/InventaireSection";
 import BoutiqueDetail from "@/components/BoutiqueDetail";
+import BoutiqueDetailView from "@/components/BoutiqueDetailView";
 import {
   mockBoutiques, mockUsers, mockVentes, mockDepenses, mockArticles,
   currentMockUser, type AppUser, type Boutique, type Role,
@@ -39,6 +40,7 @@ const Dashboard = () => {
   const [currentUser, setCurrentUser] = useState<AppUser>(currentMockUser);
   const [selectedBoutique, setSelectedBoutique] = useState<string>("all");
   const [section, setSection] = useState<SectionKey>("overview");
+  const [openedBoutiqueId, setOpenedBoutiqueId] = useState<string | null>(null);
 
   const isAdmin = currentUser.role === "admin";
   const currentBoutiqueName = useMemo(
@@ -71,8 +73,32 @@ const Dashboard = () => {
             )}
           </div>
         );
-      case "boutiques":
-        return <BoutiquesManager boutiques={boutiques} setBoutiques={setBoutiques} />;
+      case "boutiques": {
+        const opened = openedBoutiqueId ? boutiques.find((b) => b.id === openedBoutiqueId) : null;
+        if (opened) {
+          return (
+            <BoutiqueDetailView
+              boutique={opened}
+              ventes={ventes}
+              articles={articles}
+              users={users}
+              onBack={() => setOpenedBoutiqueId(null)}
+              onCreateArticle={(a) => setArticles((prev) => [a, ...prev])}
+            />
+          );
+        }
+        return (
+          <BoutiquesManager
+            boutiques={boutiques}
+            setBoutiques={setBoutiques}
+            onSelect={setOpenedBoutiqueId}
+            countsFor={(id) => ({
+              articles: articles.filter((a) => a.boutique_id === id).length,
+              ventes: ventes.filter((v) => v.boutique_id === id).length,
+            })}
+          />
+        );
+      }
       case "users":
         return <UsersManager users={users} setUsers={setUsers} boutiques={boutiques} />;
       case "ventes":
@@ -131,7 +157,7 @@ const Dashboard = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
-        <AppSidebar active={section} onChange={setSection} />
+        <AppSidebar active={section} onChange={(k) => { setSection(k); setOpenedBoutiqueId(null); }} />
 
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-16 border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-40 flex items-center px-4 gap-3">
