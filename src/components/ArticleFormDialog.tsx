@@ -9,8 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  type Article, type Boutique, type Categorie, type StatutArticle, type Promotion,
-  CATEGORIES, STATUTS,
+  type Article, type Boutique, type Categorie, type StatutArticle, type Promotion, type Devise,
+  CATEGORIES, STATUTS, DEVISES,
 } from "@/lib/mockData";
 
 interface Props {
