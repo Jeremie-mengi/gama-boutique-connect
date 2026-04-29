@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Users, Shield } from "lucide-react";
+import { useRef, useState } from "react";
+import { Plus, Users, Shield, Upload, FileText, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import type { AppUser, Boutique, Role } from "@/lib/mockData";
+import type { AppUser, Boutique, Role, DossierFile } from "@/lib/mockData";
 
 interface Props {
   users: AppUser[];
