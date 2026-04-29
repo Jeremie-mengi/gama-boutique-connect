@@ -35,7 +35,7 @@ const Dashboard = () => {
   const [boutiques, setBoutiques] = useState<Boutique[]>(mockBoutiques);
   const [users, setUsers] = useState<AppUser[]>(mockUsers);
   const [ventes] = useState(mockVentes);
-  const [depenses] = useState(mockDepenses);
+  const [depenses, setDepenses] = useState(mockDepenses);
   const [articles, setArticles] = useState(mockArticles);
   const [currentUser, setCurrentUser] = useState<AppUser>(currentMockUser);
   const [selectedBoutique, setSelectedBoutique] = useState<string>("all");
