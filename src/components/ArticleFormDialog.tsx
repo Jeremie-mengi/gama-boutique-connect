@@ -82,6 +82,7 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
       serie: form.serie.trim() || null,
       demiSerie: form.demiSerie,
       prix: Number(form.prix) || 0,
+      devise: form.devise,
       quantiteEntree: Number(form.quantiteEntree) || 0,
       quantiteVendue: 0,
       quantiteRestante: Number(form.quantiteEntree) || 0,
