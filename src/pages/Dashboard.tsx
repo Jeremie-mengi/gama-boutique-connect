@@ -112,7 +112,7 @@ const Dashboard = () => {
         return (
           <div className="space-y-6">
             <BoutiqueSelector boutiques={boutiques} value={selectedBoutique} onChange={setSelectedBoutique} />
-            <FinancesPanel boutiques={boutiques} ventes={fVentes} depenses={fDepenses} />
+            <FinancesPanel boutiques={boutiques} ventes={fVentes} depenses={fDepenses} setDepenses={setDepenses} />
           </div>
         );
       case "inventaire":
