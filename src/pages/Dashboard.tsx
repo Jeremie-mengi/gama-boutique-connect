@@ -35,7 +35,7 @@ const Dashboard = () => {
   const [boutiques, setBoutiques] = useState<Boutique[]>(mockBoutiques);
   const [users, setUsers] = useState<AppUser[]>(mockUsers);
   const [ventes] = useState(mockVentes);
-  const [depenses] = useState(mockDepenses);
+  const [depenses, setDepenses] = useState(mockDepenses);
   const [articles, setArticles] = useState(mockArticles);
   const [currentUser, setCurrentUser] = useState<AppUser>(currentMockUser);
   const [selectedBoutique, setSelectedBoutique] = useState<string>("all");
@@ -112,7 +112,7 @@ const Dashboard = () => {
         return (
           <div className="space-y-6">
             <BoutiqueSelector boutiques={boutiques} value={selectedBoutique} onChange={setSelectedBoutique} />
-            <FinancesPanel boutiques={boutiques} ventes={fVentes} depenses={fDepenses} />
+            <FinancesPanel boutiques={boutiques} ventes={fVentes} depenses={fDepenses} setDepenses={setDepenses} />
           </div>
         );
       case "inventaire":

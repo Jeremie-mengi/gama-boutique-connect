@@ -9,8 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  type Article, type Boutique, type Categorie, type StatutArticle, type Promotion,
-  CATEGORIES, STATUTS,
+  type Article, type Boutique, type Categorie, type StatutArticle, type Promotion, type Devise,
+  CATEGORIES, STATUTS, DEVISES,
 } from "@/lib/mockData";
 
 interface Props {
@@ -34,7 +34,7 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
     couleur: "", observation: "",
     statut: "EN_STOCK" as StatutArticle,
     taille: "", serie: "", demiSerie: false,
-    prix: 0, quantiteEntree: 0,
+    prix: 0, devise: "CDF" as Devise, quantiteEntree: 0,
   });
   const [promos, setPromos] = useState<Promotion[]>([]);
 
@@ -44,7 +44,7 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
       code: "", nom: "", description: "", photo: "",
       categorie: "PRET_A_PORTER", couleur: "", observation: "",
       statut: "EN_STOCK", taille: "", serie: "", demiSerie: false,
-      prix: 0, quantiteEntree: 0,
+      prix: 0, devise: "CDF", quantiteEntree: 0,
     });
     setPromos([]);
   };
@@ -82,6 +82,7 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
       serie: form.serie.trim() || null,
       demiSerie: form.demiSerie,
       prix: Number(form.prix) || 0,
+      devise: form.devise,
       quantiteEntree: Number(form.quantiteEntree) || 0,
       quantiteVendue: 0,
       quantiteRestante: Number(form.quantiteEntree) || 0,
@@ -176,10 +177,19 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label>Prix unitaire (F)</Label>
+              <Label>Prix de vente</Label>
               <Input type="number" min={0} value={form.prix} onChange={(e) => setForm({ ...form, prix: Number(e.target.value) })} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Devise</Label>
+              <Select value={form.devise} onValueChange={(v) => setForm({ ...form, devise: v as Devise })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DEVISES.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Quantité entrée</Label>

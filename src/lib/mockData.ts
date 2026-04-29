@@ -2,11 +2,31 @@
 
 export type Role = "admin" | "vendeur";
 
+export type Devise = "USD" | "CDF" | "EUR";
+
+export const DEVISES: { value: Devise; label: string; symbol: string }[] = [
+  { value: "USD", label: "USD ($)", symbol: "$" },
+  { value: "CDF", label: "CDF (FC)", symbol: "FC" },
+  { value: "EUR", label: "EUR (€)", symbol: "€" },
+];
+
+export const formatMoney = (amount: number, devise: Devise = "CDF") => {
+  const sym = DEVISES.find((d) => d.value === devise)?.symbol ?? "";
+  return `${new Intl.NumberFormat("fr-FR").format(amount)} ${sym}`;
+};
+
 export interface Boutique {
   id: string;
   nom: string;
   adresse: string | null;
   telephone: string | null;
+}
+
+export interface DossierFile {
+  name: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
 }
 
 export interface AppUser {
@@ -15,6 +35,7 @@ export interface AppUser {
   email: string;
   role: Role;
   boutique_id: string | null;
+  dossier?: DossierFile | null;
 }
 
 export const mockBoutiques: Boutique[] = [
@@ -37,8 +58,11 @@ export interface Vente {
   id: string;
   boutique_id: string;
   montant: number;
+  devise: Devise;
   date: string;
   article: string;
+  code?: string;
+  couleur?: string;
   quantite: number;
 }
 
@@ -46,35 +70,39 @@ const today = new Date();
 const d = (offset: number) => new Date(today.getTime() - offset * 86400000).toISOString();
 
 export const mockVentes: Vente[] = [
-  { id: "v1", boutique_id: "b1", montant: 45000, date: d(0), article: "Chemise lin", quantite: 2 },
-  { id: "v2", boutique_id: "b1", montant: 78000, date: d(1), article: "Veste cuir", quantite: 1 },
-  { id: "v3", boutique_id: "b2", montant: 120000, date: d(0), article: "Robe soirée", quantite: 2 },
-  { id: "v4", boutique_id: "b2", montant: 32000, date: d(2), article: "T-shirt premium", quantite: 4 },
-  { id: "v5", boutique_id: "b3", montant: 56000, date: d(1), article: "Jean slim", quantite: 2 },
-  { id: "v6", boutique_id: "b1", montant: 89000, date: d(3), article: "Costume 2 pièces", quantite: 1 },
-  { id: "v7", boutique_id: "b3", montant: 145000, date: d(0), article: "Manteau laine", quantite: 1 },
-  { id: "v8", boutique_id: "b2", montant: 67000, date: d(4), article: "Ensemble bogolan", quantite: 1 },
-  { id: "v9", boutique_id: "b1", montant: 34000, date: d(5), article: "Polo coton", quantite: 3 },
-  { id: "v10", boutique_id: "b3", montant: 92000, date: d(2), article: "Sneakers édition", quantite: 1 },
+  { id: "v1", boutique_id: "b1", montant: 45, devise: "USD", date: d(0), article: "Chemise lin", code: "CHM-001", couleur: "Blanc", quantite: 2 },
+  { id: "v2", boutique_id: "b1", montant: 78000, devise: "CDF", date: d(1), article: "Veste cuir", code: "VES-014", couleur: "Noir", quantite: 1 },
+  { id: "v3", boutique_id: "b2", montant: 110, devise: "EUR", date: d(0), article: "Robe soirée", code: "ROB-022", couleur: "Doré", quantite: 2 },
+  { id: "v4", boutique_id: "b2", montant: 32000, devise: "CDF", date: d(2), article: "T-shirt premium", code: "TSH-099", couleur: "Blanc", quantite: 4 },
+  { id: "v5", boutique_id: "b3", montant: 56, devise: "USD", date: d(1), article: "Jean slim", code: "JEA-045", couleur: "Bleu", quantite: 2 },
+  { id: "v6", boutique_id: "b1", montant: 89000, devise: "CDF", date: d(3), article: "Costume 2 pièces", code: "CST-002", couleur: "Gris", quantite: 1 },
+  { id: "v7", boutique_id: "b3", montant: 145, devise: "USD", date: d(0), article: "Manteau laine", code: "MNT-003", couleur: "Camel", quantite: 1 },
+  { id: "v8", boutique_id: "b2", montant: 67000, devise: "CDF", date: d(4), article: "Ensemble bogolan", code: "ENS-031", couleur: "Indigo", quantite: 1 },
+  { id: "v9", boutique_id: "b1", montant: 34, devise: "EUR", date: d(5), article: "Polo coton", code: "POL-007", couleur: "Orange", quantite: 3 },
+  { id: "v10", boutique_id: "b3", montant: 92, devise: "USD", date: d(2), article: "Sneakers édition", code: "SNK-Ed1", couleur: "Noir/Orange", quantite: 1 },
 ];
 
-// Dépenses
+// Dépenses & Entrées (Finances)
 export interface Depense {
   id: string;
   boutique_id: string;
   libelle: string;
   montant: number;
+  devise: Devise;
   date: string;
   categorie: "loyer" | "salaire" | "achat" | "autre";
+  type: "entree" | "sortie";
 }
 
 export const mockDepenses: Depense[] = [
-  { id: "dp1", boutique_id: "b1", libelle: "Loyer mensuel", montant: 150000, date: d(2), categorie: "loyer" },
-  { id: "dp2", boutique_id: "b1", libelle: "Réassort tissus", montant: 80000, date: d(4), categorie: "achat" },
-  { id: "dp3", boutique_id: "b2", libelle: "Salaire vendeuse", montant: 120000, date: d(1), categorie: "salaire" },
-  { id: "dp4", boutique_id: "b2", libelle: "Sacs emballage", montant: 25000, date: d(3), categorie: "achat" },
-  { id: "dp5", boutique_id: "b3", libelle: "Loyer mensuel", montant: 180000, date: d(2), categorie: "loyer" },
-  { id: "dp6", boutique_id: "b3", libelle: "Publicité Instagram", montant: 40000, date: d(5), categorie: "autre" },
+  { id: "dp1", boutique_id: "b1", libelle: "Loyer mensuel", montant: 150000, devise: "CDF", date: d(2), categorie: "loyer", type: "sortie" },
+  { id: "dp2", boutique_id: "b1", libelle: "Réassort tissus", montant: 80, devise: "USD", date: d(4), categorie: "achat", type: "sortie" },
+  { id: "dp3", boutique_id: "b2", libelle: "Salaire vendeuse", montant: 120000, devise: "CDF", date: d(1), categorie: "salaire", type: "sortie" },
+  { id: "dp4", boutique_id: "b2", libelle: "Sacs emballage", montant: 25, devise: "EUR", date: d(3), categorie: "achat", type: "sortie" },
+  { id: "dp5", boutique_id: "b3", libelle: "Loyer mensuel", montant: 180000, devise: "CDF", date: d(2), categorie: "loyer", type: "sortie" },
+  { id: "dp6", boutique_id: "b3", libelle: "Publicité Instagram", montant: 40, devise: "USD", date: d(5), categorie: "autre", type: "sortie" },
+  { id: "dp7", boutique_id: "b1", libelle: "Apport associé", montant: 500, devise: "USD", date: d(6), categorie: "autre", type: "entree" },
+  { id: "dp8", boutique_id: "b2", libelle: "Remboursement client", montant: 50, devise: "EUR", date: d(7), categorie: "autre", type: "entree" },
 ];
 
 // Articles enrichis
@@ -119,6 +147,7 @@ export interface Article {
   serie?: string | null;
   demiSerie: boolean;
   prix: number;
+  devise?: Devise;
   quantiteEntree: number;
   quantiteVendue: number;
   quantiteRestante: number;
