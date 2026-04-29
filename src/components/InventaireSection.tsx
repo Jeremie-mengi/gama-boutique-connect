@@ -1,22 +1,14 @@
 import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { Package, CalendarRange, Plus, Tag, Trash2 } from "lucide-react";
+import { Package, CalendarRange, Search, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
-} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import {
-  type Article, type Boutique, type Categorie, type StatutArticle, type Promotion,
-  CATEGORIES, STATUTS,
-} from "@/lib/mockData";
+import ArticleFormDialog from "./ArticleFormDialog";
+import { type Article, type Boutique, CATEGORIES } from "@/lib/mockData";
 
 interface Props {
   boutiques: Boutique[];
@@ -27,119 +19,73 @@ interface Props {
 const fmt = (n: number) => new Intl.NumberFormat("fr-FR").format(n) + " F";
 const toInputDate = (iso: string) => iso.slice(0, 10);
 
+type NumOp = "all" | "gte" | "lte" | "eq";
+const numFilter = (val: number, op: NumOp, ref: string) => {
+  if (op === "all" || ref === "") return true;
+  const r = Number(ref);
+  if (Number.isNaN(r)) return true;
+  if (op === "gte") return val >= r;
+  if (op === "lte") return val <= r;
+  return val === r;
+};
+
 const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
   const today = new Date();
   const past = new Date(today.getTime() - 30 * 86400000);
 
+  // Filtres
   const [boutique, setBoutique] = useState<string>("all");
   const [from, setFrom] = useState(toInputDate(past.toISOString()));
   const [to, setTo] = useState(toInputDate(today.toISOString()));
-  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [nom, setNom] = useState("");
+  const [couleur, setCouleur] = useState("");
+  const [taille, setTaille] = useState("");
+  const [categorie, setCategorie] = useState<string>("all");
+  const [promo, setPromo] = useState<"all" | "yes" | "no">("all");
 
-  // Form state
-  const [form, setForm] = useState({
-    boutique_id: boutiques[0]?.id ?? "",
-    code: "",
-    nom: "",
-    description: "",
-    photo: "",
-    categorie: "PRET_A_PORTER" as Categorie,
-    couleur: "",
-    observation: "",
-    statut: "EN_STOCK" as StatutArticle,
-    taille: "",
-    serie: "",
-    demiSerie: false,
-    prix: 0,
-    quantiteEntree: 0,
-  });
-  const [promos, setPromos] = useState<Promotion[]>([]);
+  const [prixOp, setPrixOp] = useState<NumOp>("all");
+  const [prixVal, setPrixVal] = useState("");
+  const [restOp, setRestOp] = useState<NumOp>("all");
+  const [restVal, setRestVal] = useState("");
+  const [vendOp, setVendOp] = useState<NumOp>("all");
+  const [vendVal, setVendVal] = useState("");
 
   const filtered = useMemo(() => {
     const fromTs = +new Date(from);
     const toTs = +new Date(to) + 86400000;
     return articles.filter((a) => {
       const t = +new Date(a.dateEntreeStock);
-      const inDate = t >= fromTs && t <= toTs;
-      const inBoutique = boutique === "all" || a.boutique_id === boutique;
-      return inDate && inBoutique;
+      if (!(t >= fromTs && t <= toTs)) return false;
+      if (boutique !== "all" && a.boutique_id !== boutique) return false;
+      if (code && !a.code.toLowerCase().includes(code.toLowerCase())) return false;
+      if (nom && !a.nom.toLowerCase().includes(nom.toLowerCase())) return false;
+      if (couleur && !a.couleur.toLowerCase().includes(couleur.toLowerCase())) return false;
+      if (taille && !(a.taille ?? "").toLowerCase().includes(taille.toLowerCase())) return false;
+      if (categorie !== "all" && a.categorie !== categorie) return false;
+      if (promo === "yes" && a.promotions.length === 0) return false;
+      if (promo === "no" && a.promotions.length > 0) return false;
+      if (!numFilter(a.prix, prixOp, prixVal)) return false;
+      if (!numFilter(a.quantiteRestante, restOp, restVal)) return false;
+      if (!numFilter(a.quantiteVendue, vendOp, vendVal)) return false;
+      return true;
     });
-  }, [articles, from, to, boutique]);
+  }, [articles, from, to, boutique, code, nom, couleur, taille, categorie, promo, prixOp, prixVal, restOp, restVal, vendOp, vendVal]);
 
   const nameOf = (id: string) => boutiques.find((b) => b.id === id)?.nom ?? "—";
   const totalEntree = filtered.reduce((s, a) => s + a.quantiteEntree, 0);
   const totalRestant = filtered.reduce((s, a) => s + a.quantiteRestante, 0);
   const totalValeur = filtered.reduce((s, a) => s + a.quantiteRestante * a.prix, 0);
 
-  const addPromo = () => {
-    if (promos.length >= 2) {
-      toast.error("Maximum 2 promotions par article");
-      return;
-    }
-    setPromos((p) => [
-      ...p,
-      {
-        id: crypto.randomUUID(),
-        libelle: "",
-        pourcentage: 10,
-        dateDebut: toInputDate(new Date().toISOString()),
-        dateFin: toInputDate(new Date(Date.now() + 7 * 86400000).toISOString()),
-      },
-    ]);
-  };
-
-  const updatePromo = (id: string, patch: Partial<Promotion>) =>
-    setPromos((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-
-  const removePromo = (id: string) => setPromos((prev) => prev.filter((p) => p.id !== id));
-
-  const resetForm = () => {
-    setForm({
-      boutique_id: boutiques[0]?.id ?? "",
-      code: "", nom: "", description: "", photo: "",
-      categorie: "PRET_A_PORTER", couleur: "", observation: "",
-      statut: "EN_STOCK", taille: "", serie: "", demiSerie: false,
-      prix: 0, quantiteEntree: 0,
-    });
-    setPromos([]);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.boutique_id || !form.code.trim() || !form.nom.trim() || !form.couleur.trim()) {
-      toast.error("Boutique, code, nom et couleur sont obligatoires");
-      return;
-    }
-    const article: Article = {
-      id: crypto.randomUUID(),
-      boutique_id: form.boutique_id,
-      code: form.code.trim(),
-      nom: form.nom.trim(),
-      description: form.description.trim() || null,
-      photo: form.photo.trim() || null,
-      categorie: form.categorie,
-      couleur: form.couleur.trim(),
-      observation: form.observation.trim() || null,
-      statut: form.statut,
-      taille: form.taille.trim() || null,
-      serie: form.serie.trim() || null,
-      demiSerie: form.demiSerie,
-      prix: Number(form.prix) || 0,
-      quantiteEntree: Number(form.quantiteEntree) || 0,
-      quantiteVendue: 0,
-      quantiteRestante: Number(form.quantiteEntree) || 0,
-      dateEntreeStock: new Date().toISOString(),
-      promotions: promos,
-    };
-    setArticles((prev) => [article, ...prev]);
-    toast.success("Article créé");
-    setOpen(false);
-    resetForm();
+  const resetFilters = () => {
+    setBoutique("all"); setCode(""); setNom(""); setCouleur(""); setTaille("");
+    setCategorie("all"); setPromo("all");
+    setPrixOp("all"); setPrixVal(""); setRestOp("all"); setRestVal(""); setVendOp("all"); setVendVal("");
   };
 
   return (
     <div className="space-y-6">
-      {/* Header & filtres */}
+      {/* Header */}
       <Card className="p-6 shadow-card border-border/60">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
           <div className="flex items-center gap-3">
@@ -148,171 +94,24 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
             </div>
             <div>
               <h2 className="font-bold text-2xl">Inventaire</h2>
-              <p className="text-sm text-muted-foreground">
-                Articles par boutique selon une période
-              </p>
+              <p className="text-sm text-muted-foreground">Articles par boutique selon une période</p>
             </div>
           </div>
-
-          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-            <DialogTrigger asChild>
-              <Button variant="hero">
-                <Plus className="h-4 w-4" />
-                Nouvel article
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Nouvel article</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Boutique *</Label>
-                    <Select value={form.boutique_id} onValueChange={(v) => setForm({ ...form, boutique_id: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {boutiques.map((b) => (
-                          <SelectItem key={b.id} value={b.id}>{b.nom}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Code *</Label>
-                    <Input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="CHM-001" />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Nom *</Label>
-                  <Input value={form.nom} onChange={(e) => setForm({ ...form, nom: e.target.value })} placeholder="Chemise lin blanc" />
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Catégorie</Label>
-                    <Select value={form.categorie} onValueChange={(v) => setForm({ ...form, categorie: v as Categorie })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Couleur *</Label>
-                    <Input value={form.couleur} onChange={(e) => setForm({ ...form, couleur: e.target.value })} placeholder="Blanc" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Statut</Label>
-                    <Select value={form.statut} onValueChange={(v) => setForm({ ...form, statut: v as StatutArticle })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {STATUTS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Taille</Label>
-                    <Input value={form.taille} onChange={(e) => setForm({ ...form, taille: e.target.value })} placeholder="M, 42..." />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Série</Label>
-                    <Input value={form.serie} onChange={(e) => setForm({ ...form, serie: e.target.value })} placeholder="Été 2026" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="block">Demi-série</Label>
-                    <div className="flex items-center h-10 gap-2">
-                      <Switch checked={form.demiSerie} onCheckedChange={(v) => setForm({ ...form, demiSerie: v })} />
-                      <span className="text-sm text-muted-foreground">{form.demiSerie ? "Oui" : "Non"}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Prix unitaire (F)</Label>
-                    <Input type="number" min={0} value={form.prix} onChange={(e) => setForm({ ...form, prix: Number(e.target.value) })} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Quantité entrée</Label>
-                    <Input type="number" min={0} value={form.quantiteEntree} onChange={(e) => setForm({ ...form, quantiteEntree: Number(e.target.value) })} />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Photo (URL)</Label>
-                  <Input value={form.photo} onChange={(e) => setForm({ ...form, photo: e.target.value })} placeholder="https://..." />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Description</Label>
-                  <Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Observation</Label>
-                  <Textarea rows={2} value={form.observation} onChange={(e) => setForm({ ...form, observation: e.target.value })} />
-                </div>
-
-                {/* Promotions */}
-                <div className="space-y-3 rounded-lg border border-border/60 p-4 bg-card/40">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Tag className="h-4 w-4 text-primary" />
-                      <Label className="m-0">Promotions ({promos.length}/2)</Label>
-                    </div>
-                    <Button type="button" variant="outline" size="sm" onClick={addPromo} disabled={promos.length >= 2}>
-                      <Plus className="h-3.5 w-3.5" /> Ajouter
-                    </Button>
-                  </div>
-                  {promos.map((p) => (
-                    <div key={p.id} className="grid grid-cols-12 gap-2 items-end">
-                      <div className="col-span-4 space-y-1">
-                        <Label className="text-xs">Libellé</Label>
-                        <Input value={p.libelle} onChange={(e) => updatePromo(p.id, { libelle: e.target.value })} placeholder="Soldes" />
-                      </div>
-                      <div className="col-span-2 space-y-1">
-                        <Label className="text-xs">%</Label>
-                        <Input type="number" min={0} max={100} value={p.pourcentage} onChange={(e) => updatePromo(p.id, { pourcentage: Number(e.target.value) })} />
-                      </div>
-                      <div className="col-span-2.5 space-y-1">
-                        <Label className="text-xs">Du</Label>
-                        <Input type="date" value={p.dateDebut.slice(0, 10)} onChange={(e) => updatePromo(p.id, { dateDebut: e.target.value })} />
-                      </div>
-                      <div className="col-span-2.5 space-y-1">
-                        <Label className="text-xs">Au</Label>
-                        <Input type="date" value={p.dateFin.slice(0, 10)} onChange={(e) => updatePromo(p.id, { dateFin: e.target.value })} />
-                      </div>
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removePromo(p.id)} className="col-span-1">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                <DialogFooter>
-                  <Button type="submit" variant="hero">Créer l'article</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <ArticleFormDialog
+            boutiques={boutiques}
+            onCreate={(a) => setArticles((prev) => [a, ...prev])}
+          />
         </div>
 
-        {/* Filtres */}
-        <div className="grid gap-3 md:grid-cols-3">
+        {/* Filtres principaux */}
+        <div className="grid gap-3 md:grid-cols-3 mb-3">
           <div>
             <Label className="text-xs text-muted-foreground">Boutique</Label>
             <Select value={boutique} onValueChange={setBoutique}>
               <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les boutiques</SelectItem>
-                {boutiques.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>{b.nom}</SelectItem>
-                ))}
+                {boutiques.map((b) => (<SelectItem key={b.id} value={b.id}>{b.nom}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
@@ -323,6 +122,107 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
           <div>
             <Label className="text-xs text-muted-foreground flex items-center gap-1"><CalendarRange className="h-3 w-3" /> Au</Label>
             <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+        </div>
+
+        {/* Filtres avancés */}
+        <div className="rounded-lg border border-border/60 bg-card/40 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Search className="h-4 w-4 text-primary" /> Filtres avancés
+            </div>
+            <Button variant="ghost" size="sm" onClick={resetFilters}>
+              <X className="h-3.5 w-3.5" /> Réinitialiser
+            </Button>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Code</Label>
+              <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="CHM-001" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Nom</Label>
+              <Input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Chemise..." />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Couleur</Label>
+              <Input value={couleur} onChange={(e) => setCouleur(e.target.value)} placeholder="Blanc" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Taille</Label>
+              <Input value={taille} onChange={(e) => setTaille(e.target.value)} placeholder="M, 42..." />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Catégorie</Label>
+              <Select value={categorie} onValueChange={setCategorie}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes</SelectItem>
+                  {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Promotion</Label>
+              <Select value={promo} onValueChange={(v) => setPromo(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes</SelectItem>
+                  <SelectItem value="yes">Avec promo</SelectItem>
+                  <SelectItem value="no">Sans promo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Prix */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Prix</Label>
+              <div className="flex gap-2">
+                <Select value={prixOp} onValueChange={(v) => setPrixOp(v as NumOp)}>
+                  <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous</SelectItem>
+                    <SelectItem value="gte">≥</SelectItem>
+                    <SelectItem value="lte">≤</SelectItem>
+                    <SelectItem value="eq">=</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input type="number" value={prixVal} onChange={(e) => setPrixVal(e.target.value)} placeholder="F" disabled={prixOp === "all"} />
+              </div>
+            </div>
+            {/* Qté restante */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Qté restante</Label>
+              <div className="flex gap-2">
+                <Select value={restOp} onValueChange={(v) => setRestOp(v as NumOp)}>
+                  <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous</SelectItem>
+                    <SelectItem value="gte">≥</SelectItem>
+                    <SelectItem value="lte">≤</SelectItem>
+                    <SelectItem value="eq">=</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input type="number" value={restVal} onChange={(e) => setRestVal(e.target.value)} disabled={restOp === "all"} />
+              </div>
+            </div>
+            {/* Qté vendue */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Qté vendue</Label>
+              <div className="flex gap-2">
+                <Select value={vendOp} onValueChange={(v) => setVendOp(v as NumOp)}>
+                  <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous</SelectItem>
+                    <SelectItem value="gte">≥</SelectItem>
+                    <SelectItem value="lte">≤</SelectItem>
+                    <SelectItem value="eq">=</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input type="number" value={vendVal} onChange={(e) => setVendVal(e.target.value)} disabled={vendOp === "all"} />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -350,9 +250,7 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
       {/* Liste */}
       <Card className="p-6 shadow-card border-border/60">
         {filtered.length === 0 ? (
-          <p className="text-muted-foreground text-sm py-12 text-center">
-            Aucun article pour ces filtres.
-          </p>
+          <p className="text-muted-foreground text-sm py-12 text-center">Aucun article pour ces filtres.</p>
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -387,19 +285,15 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
                     <TableCell className="text-right">{a.quantiteEntree}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{a.quantiteVendue}</TableCell>
                     <TableCell className="text-right">
-                      <span className={a.quantiteRestante <= 6 ? "text-rose-400 font-semibold" : "font-semibold"}>
-                        {a.quantiteRestante}
-                      </span>
+                      <span className={a.quantiteRestante <= 6 ? "text-rose-400 font-semibold" : ""}>{a.quantiteRestante}</span>
                     </TableCell>
-                    <TableCell className="text-right">{fmt(a.prix)}</TableCell>
+                    <TableCell className="text-right font-semibold">{fmt(a.prix)}</TableCell>
                     <TableCell>
                       {a.promotions.length > 0 ? (
-                        <Badge className="bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">
+                        <Badge className="bg-primary/15 text-primary border-primary/30">
                           -{a.promotions[0].pourcentage}%
                         </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
+                      ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                   </TableRow>
                 ))}
