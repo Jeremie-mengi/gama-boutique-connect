@@ -34,7 +34,7 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
     couleur: "", observation: "",
     statut: "EN_STOCK" as StatutArticle,
     taille: "", serie: "", demiSerie: false,
-    prix: 0, quantiteEntree: 0,
+    prix: 0, devise: "CDF" as Devise, quantiteEntree: 0,
   });
   const [promos, setPromos] = useState<Promotion[]>([]);
 
