@@ -29,8 +29,14 @@ const items: { key: SectionKey; title: string; icon: typeof Store }[] = [
 ];
 
 const AppSidebar = ({ active, onChange }: Props) => {
-  const { state } = useSidebar();
+  const { state, setOpen, setOpenMobile, isMobile } = useSidebar();
   const collapsed = state === "collapsed";
+
+  const handleSelect = (k: SectionKey) => {
+    onChange(k);
+    if (isMobile) setOpenMobile(false);
+    else setOpen(false);
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -57,7 +63,7 @@ const AppSidebar = ({ active, onChange }: Props) => {
                 <SidebarMenuItem key={it.key}>
                   <SidebarMenuButton
                     isActive={active === it.key}
-                    onClick={() => onChange(it.key)}
+                    onClick={() => handleSelect(it.key)}
                     className="hover:bg-sidebar-accent"
                   >
                     <it.icon className="h-4 w-4" />
