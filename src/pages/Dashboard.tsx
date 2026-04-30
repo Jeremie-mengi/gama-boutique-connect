@@ -14,6 +14,8 @@ import BoutiqueSelector from "@/components/BoutiqueSelector";
 import VentesTable from "@/components/VentesTable";
 import FinancesPanel from "@/components/FinancesPanel";
 import InventaireSection from "@/components/InventaireSection";
+import ArticlesSection from "@/components/ArticlesSection";
+import RapportSection from "@/components/RapportSection";
 import BoutiqueDetail from "@/components/BoutiqueDetail";
 import BoutiqueDetailView from "@/components/BoutiqueDetailView";
 import {
@@ -24,10 +26,12 @@ import {
 const SECTION_LABELS: Record<SectionKey, string> = {
   overview: "Vue d'ensemble",
   boutiques: "Boutiques",
+  articles: "Articles",
   users: "Utilisateurs",
   ventes: "Ventes",
   finances: "Finances",
   inventaire: "Inventaire",
+  rapport: "Rapport",
 };
 
 const Dashboard = () => {
@@ -117,6 +121,10 @@ const Dashboard = () => {
         );
       case "inventaire":
         return <InventaireSection boutiques={boutiques} articles={articles} setArticles={setArticles} />;
+      case "articles":
+        return <ArticlesSection boutiques={boutiques} articles={articles} setArticles={setArticles} />;
+      case "rapport":
+        return <RapportSection />;
     }
   };
 
