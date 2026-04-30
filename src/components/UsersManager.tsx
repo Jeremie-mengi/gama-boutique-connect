@@ -20,10 +20,26 @@ interface Props {
 
 const UsersManager = ({ users, setUsers, boutiques }: Props) => {
   const [open, setOpen] = useState(false);
-  const [newRole, setNewRole] = useState<Role>("vendeur");
-  const [newBoutique, setNewBoutique] = useState<string>("none");
+  const [editing, setEditing] = useState<AppUser | null>(null);
+  const [toDelete, setToDelete] = useState<AppUser | null>(null);
+  const [formRole, setFormRole] = useState<Role>("vendeur");
+  const [formBoutique, setFormBoutique] = useState<string>("none");
 
-  const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
+  const openCreate = () => {
+    setEditing(null);
+    setFormRole("vendeur");
+    setFormBoutique("none");
+    setOpen(true);
+  };
+
+  const openEdit = (u: AppUser) => {
+    setEditing(u);
+    setFormRole(u.role);
+    setFormBoutique(u.boutique_id ?? "none");
+    setOpen(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const full_name = String(fd.get("full_name") ?? "").trim();
@@ -32,20 +48,22 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
       toast.error("Nom et email requis");
       return;
     }
-    setUsers((prev) => [
-      {
-        id: crypto.randomUUID(),
-        full_name,
-        email,
-        role: newRole,
-        boutique_id: newBoutique === "none" ? null : newBoutique,
-      },
-      ...prev,
-    ]);
-    toast.success("Utilisateur créé");
+    const boutique_id = formBoutique === "none" ? null : formBoutique;
+    if (editing) {
+      setUsers((prev) => prev.map((u) => u.id === editing.id ? { ...u, full_name, email, role: formRole, boutique_id } : u));
+      toast.success("Utilisateur modifié");
+    } else {
+      setUsers((prev) => [{ id: crypto.randomUUID(), full_name, email, role: formRole, boutique_id }, ...prev]);
+      toast.success("Utilisateur créé");
+    }
     setOpen(false);
-    setNewRole("vendeur");
-    setNewBoutique("none");
+  };
+
+  const handleDelete = () => {
+    if (!toDelete) return;
+    setUsers((prev) => prev.filter((u) => u.id !== toDelete.id));
+    toast.success(`${toDelete.full_name} supprimé`);
+    setToDelete(null);
   };
 
   const updateUser = (id: string, patch: Partial<AppUser>) => {
