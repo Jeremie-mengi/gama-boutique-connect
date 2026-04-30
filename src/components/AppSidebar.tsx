@@ -63,7 +63,7 @@ const AppSidebar = ({ active, onChange }: Props) => {
                 <SidebarMenuItem key={it.key}>
                   <SidebarMenuButton
                     isActive={active === it.key}
-                    onClick={() => onChange(it.key)}
+                    onClick={() => handleSelect(it.key)}
                     className="hover:bg-sidebar-accent"
                   >
                     <it.icon className="h-4 w-4" />
