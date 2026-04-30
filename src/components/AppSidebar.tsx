@@ -1,4 +1,4 @@
-import { LayoutDashboard, Store, Users, ShoppingBag, Wallet, Package, Sparkles } from "lucide-react";
+import { LayoutDashboard, Store, Users, ShoppingBag, Wallet, Package, Sparkles, Shirt, FileBarChart2 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,7 +12,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-export type SectionKey = "overview" | "boutiques" | "users" | "ventes" | "finances" | "inventaire";
+export type SectionKey = "overview" | "boutiques" | "articles" | "users" | "ventes" | "finances" | "inventaire" | "rapport";
 
 interface Props {
   active: SectionKey;
@@ -22,10 +22,12 @@ interface Props {
 const items: { key: SectionKey; title: string; icon: typeof Store }[] = [
   { key: "overview", title: "Vue d'ensemble", icon: LayoutDashboard },
   { key: "boutiques", title: "Boutiques", icon: Store },
+  { key: "articles", title: "Articles", icon: Shirt },
   { key: "users", title: "Utilisateurs", icon: Users },
   { key: "ventes", title: "Ventes", icon: ShoppingBag },
   { key: "finances", title: "Finances", icon: Wallet },
   { key: "inventaire", title: "Inventaire", icon: Package },
+  { key: "rapport", title: "Rapport", icon: FileBarChart2 },
 ];
 
 const AppSidebar = ({ active, onChange }: Props) => {
