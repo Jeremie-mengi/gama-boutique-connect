@@ -1,6 +1,16 @@
 // Données factices pour la maquette front (pas de backend).
 
-export type Role = "admin" | "vendeur";
+export type Role = "admin" | "vendeur" | "agent_inventaire" | "agent_simple" | "garde";
+
+export const ROLES: { value: Role; label: string }[] = [
+  { value: "admin", label: "Admin" },
+  { value: "vendeur", label: "Vendeur" },
+  { value: "agent_inventaire", label: "Agent inventaire" },
+  { value: "agent_simple", label: "Agent simple" },
+  { value: "garde", label: "Garde" },
+];
+
+export const roleLabel = (r: Role) => ROLES.find((x) => x.value === r)?.label ?? r;
 
 export type Devise = "USD" | "CDF" | "EUR";
 
