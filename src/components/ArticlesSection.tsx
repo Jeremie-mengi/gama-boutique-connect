@@ -102,6 +102,8 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
   const [vendOp, setVendOp] = useState<NumOp>("all");
   const [vendVal, setVendVal] = useState("");
 
+  const [zoomArticle, setZoomArticle] = useState<Article | null>(null);
+
   const nameOf = (id: string) => boutiques.find((b) => b.id === id)?.nom ?? "—";
 
   const filtered = useMemo(() => {
@@ -141,10 +143,38 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
               <p className="text-sm text-muted-foreground">Recherche multicritères et création d'article</p>
             </div>
           </div>
-          <ArticleFormDialog
-            boutiques={boutiques}
-            onCreate={(a) => setArticles((prev) => [a, ...prev])}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                exportToPdf({
+                  title: "Articles",
+                  subtitle: `${filtered.length} article(s) filtré(s)`,
+                  columns: [
+                    { header: "Code", accessor: (a: Article) => a.code },
+                    { header: "Nom", accessor: (a) => a.nom },
+                    { header: "Boutique", accessor: (a) => nameOf(a.boutique_id) },
+                    { header: "Couleur", accessor: (a) => a.couleur },
+                    { header: "Taille", accessor: (a) => a.taille ?? "—" },
+                    { header: "Catégorie", accessor: (a) => CATEGORIES.find((c) => c.value === a.categorie)?.label ?? "" },
+                    { header: "Restant", accessor: (a) => a.quantiteRestante, align: "right" },
+                    { header: "Vendu", accessor: (a) => a.quantiteVendue, align: "right" },
+                    { header: "Prix", accessor: (a) => formatMoney(a.prix, a.devise ?? "CDF"), align: "right" },
+                    { header: "Promo", accessor: (a) => a.promotions[0] ? `-${a.promotions[0].pourcentage}%` : "—" },
+                  ],
+                  rows: filtered,
+                })
+              }
+              disabled={filtered.length === 0}
+            >
+              <FileDown className="h-4 w-4" /> PDF
+            </Button>
+            <ArticleFormDialog
+              boutiques={boutiques}
+              onCreate={(a) => setArticles((prev) => [a, ...prev])}
+            />
+          </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3 mb-3">
