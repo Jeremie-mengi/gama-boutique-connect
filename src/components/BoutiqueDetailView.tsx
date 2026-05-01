@@ -248,6 +248,13 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ImageLightbox
+        open={!!zoomArticle}
+        onOpenChange={(v) => !v && setZoomArticle(null)}
+        images={zoomArticle?.photo ? [zoomArticle.photo] : []}
+        title={zoomArticle?.nom}
+      />
     </div>
   );
 };
