@@ -307,9 +307,16 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((a) => <ArticleCard key={a.id} a={a} boutiqueName={nameOf(a.boutique_id)} />)}
+          {filtered.map((a) => <ArticleCard key={a.id} a={a} boutiqueName={nameOf(a.boutique_id)} onZoom={setZoomArticle} />)}
         </div>
       )}
+
+      <ImageLightbox
+        open={!!zoomArticle}
+        onOpenChange={(v) => !v && setZoomArticle(null)}
+        images={zoomArticle?.photo ? [zoomArticle.photo] : []}
+        title={zoomArticle?.nom}
+      />
     </div>
   );
 };
