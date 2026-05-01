@@ -183,6 +183,7 @@ const FinancesPanel = ({ boutiques, ventes, depenses, setDepenses }: Props) => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Totaux par devise */}
