@@ -185,6 +185,7 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
           <VentesTable
             boutiques={[boutique]}
             ventes={bVentes}
+            articles={bArticles}
             title={`Ventes · ${boutique.nom}`}
             showBoutique={false}
           />
