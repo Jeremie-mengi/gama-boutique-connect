@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Store, Package, ShoppingBag, User, MapPin, Phone, ImageOff, Tag } from "lucide-react";
+import { ArrowLeft, Store, Package, ShoppingBag, User, MapPin, Phone, ImageOff, Tag, FileDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ArticleFormDialog from "./ArticleFormDialog";
 import VentesTable from "./VentesTable";
+import ImageLightbox from "./ImageLightbox";
+import { exportToPdf } from "@/lib/pdfExport";
 import {
   type Article, type AppUser, type Boutique, type Vente, type StatutArticle,
   CATEGORIES, STATUTS, formatMoney,
@@ -22,12 +24,17 @@ interface Props {
   onCreateArticle: (a: Article) => void;
 }
 
-const ArticleCard = ({ a }: { a: Article }) => {
+const ArticleCard = ({ a, onZoom }: { a: Article; onZoom: (a: Article) => void }) => {
   const promo = a.promotions[0];
   const lowStock = a.quantiteRestante <= 6;
   return (
     <div className="group rounded-xl border border-border/60 bg-card overflow-hidden shadow-card hover:shadow-glow hover:border-primary/40 transition-all">
-      <div className="relative aspect-square bg-gradient-to-br from-muted/40 to-muted/10 flex items-center justify-center overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onZoom(a)}
+        className="relative aspect-square w-full bg-gradient-to-br from-muted/40 to-muted/10 flex items-center justify-center overflow-hidden cursor-zoom-in"
+        aria-label={`Voir ${a.nom} en grand`}
+      >
         {a.photo ? (
           <img src={a.photo} alt={a.nom} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
         ) : (
@@ -44,7 +51,7 @@ const ArticleCard = ({ a }: { a: Article }) => {
         <div className="absolute top-2 right-2 rounded-md bg-background/85 backdrop-blur px-2 py-0.5 text-[10px] font-mono">
           {a.code}
         </div>
-      </div>
+      </button>
 
       <div className="p-3 space-y-2">
         <h4 className="font-semibold leading-tight line-clamp-2 text-sm">{a.nom}</h4>
@@ -85,6 +92,7 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
   const bUsers = users.filter((u) => u.boutique_id === boutique.id);
 
   const [statutFilter, setStatutFilter] = useState<StatutArticle | "all">("EN_STOCK");
+  const [zoomArticle, setZoomArticle] = useState<Article | null>(null);
   const visibleArticles = statutFilter === "all" ? bArticles : bArticles.filter((a) => a.statut === statutFilter);
 
   // Compteurs par statut
@@ -138,11 +146,36 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
             <TabsTrigger value="ventes" className="gap-2"><ShoppingBag className="h-4 w-4" /> Ventes ({bVentes.length})</TabsTrigger>
             <TabsTrigger value="vendeur" className="gap-2"><User className="h-4 w-4" /> Vendeur ({bUsers.length})</TabsTrigger>
           </TabsList>
-          <ArticleFormDialog
-            boutiques={[boutique]}
-            lockedBoutiqueId={boutique.id}
-            onCreate={onCreateArticle}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                exportToPdf({
+                  title: `Articles · ${boutique.nom}`,
+                  subtitle: `${visibleArticles.length} article(s)`,
+                  columns: [
+                    { header: "Code", accessor: (a: Article) => a.code },
+                    { header: "Nom", accessor: (a) => a.nom },
+                    { header: "Couleur", accessor: (a) => a.couleur },
+                    { header: "Taille", accessor: (a) => a.taille ?? "—" },
+                    { header: "Statut", accessor: (a) => STATUTS.find((s) => s.value === a.statut)?.label ?? "" },
+                    { header: "Restant", accessor: (a) => a.quantiteRestante, align: "right" },
+                    { header: "Prix", accessor: (a) => formatMoney(a.prix, a.devise ?? "CDF"), align: "right" },
+                  ],
+                  rows: visibleArticles,
+                })
+              }
+              disabled={visibleArticles.length === 0}
+            >
+              <FileDown className="h-4 w-4" /> PDF
+            </Button>
+            <ArticleFormDialog
+              boutiques={[boutique]}
+              lockedBoutiqueId={boutique.id}
+              onCreate={onCreateArticle}
+            />
+          </div>
         </div>
 
         {/* ARTICLES — Kanban une seule colonne avec filtre statut */}
@@ -175,7 +208,7 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
             </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {visibleArticles.map((a) => <ArticleCard key={a.id} a={a} />)}
+              {visibleArticles.map((a) => <ArticleCard key={a.id} a={a} onZoom={setZoomArticle} />)}
             </div>
           )}
         </TabsContent>
@@ -185,6 +218,7 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
           <VentesTable
             boutiques={[boutique]}
             ventes={bVentes}
+            articles={bArticles}
             title={`Ventes · ${boutique.nom}`}
             showBoutique={false}
           />
@@ -214,6 +248,13 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ImageLightbox
+        open={!!zoomArticle}
+        onOpenChange={(v) => !v && setZoomArticle(null)}
+        images={zoomArticle?.photo ? [zoomArticle.photo] : []}
+        title={zoomArticle?.nom}
+      />
     </div>
   );
 };
