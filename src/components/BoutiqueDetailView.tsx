@@ -92,6 +92,7 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
   const bUsers = users.filter((u) => u.boutique_id === boutique.id);
 
   const [statutFilter, setStatutFilter] = useState<StatutArticle | "all">("EN_STOCK");
+  const [zoomArticle, setZoomArticle] = useState<Article | null>(null);
   const visibleArticles = statutFilter === "all" ? bArticles : bArticles.filter((a) => a.statut === statutFilter);
 
   // Compteurs par statut
@@ -145,11 +146,36 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
             <TabsTrigger value="ventes" className="gap-2"><ShoppingBag className="h-4 w-4" /> Ventes ({bVentes.length})</TabsTrigger>
             <TabsTrigger value="vendeur" className="gap-2"><User className="h-4 w-4" /> Vendeur ({bUsers.length})</TabsTrigger>
           </TabsList>
-          <ArticleFormDialog
-            boutiques={[boutique]}
-            lockedBoutiqueId={boutique.id}
-            onCreate={onCreateArticle}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                exportToPdf({
+                  title: `Articles · ${boutique.nom}`,
+                  subtitle: `${visibleArticles.length} article(s)`,
+                  columns: [
+                    { header: "Code", accessor: (a: Article) => a.code },
+                    { header: "Nom", accessor: (a) => a.nom },
+                    { header: "Couleur", accessor: (a) => a.couleur },
+                    { header: "Taille", accessor: (a) => a.taille ?? "—" },
+                    { header: "Statut", accessor: (a) => STATUTS.find((s) => s.value === a.statut)?.label ?? "" },
+                    { header: "Restant", accessor: (a) => a.quantiteRestante, align: "right" },
+                    { header: "Prix", accessor: (a) => formatMoney(a.prix, a.devise ?? "CDF"), align: "right" },
+                  ],
+                  rows: visibleArticles,
+                })
+              }
+              disabled={visibleArticles.length === 0}
+            >
+              <FileDown className="h-4 w-4" /> PDF
+            </Button>
+            <ArticleFormDialog
+              boutiques={[boutique]}
+              lockedBoutiqueId={boutique.id}
+              onCreate={onCreateArticle}
+            />
+          </div>
         </div>
 
         {/* ARTICLES — Kanban une seule colonne avec filtre statut */}
@@ -182,7 +208,7 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
             </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {visibleArticles.map((a) => <ArticleCard key={a.id} a={a} />)}
+              {visibleArticles.map((a) => <ArticleCard key={a.id} a={a} onZoom={setZoomArticle} />)}
             </div>
           )}
         </TabsContent>
