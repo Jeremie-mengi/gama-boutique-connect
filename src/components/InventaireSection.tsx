@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { Package, CalendarRange, Search, X } from "lucide-react";
+import { Package, CalendarRange, Search, X, FileDown } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ArticleFormDialog from "./ArticleFormDialog";
+import { exportToPdf } from "@/lib/pdfExport";
 import { type Article, type Boutique, CATEGORIES } from "@/lib/mockData";
 
 interface Props {
@@ -97,10 +98,44 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
               <p className="text-sm text-muted-foreground">Articles par boutique selon une période</p>
             </div>
           </div>
-          <ArticleFormDialog
-            boutiques={boutiques}
-            onCreate={(a) => setArticles((prev) => [a, ...prev])}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                exportToPdf({
+                  title: "Inventaire",
+                  subtitle: `Période ${from} → ${to} · ${filtered.length} article(s)`,
+                  columns: [
+                    { header: "Code", accessor: (a: Article) => a.code },
+                    { header: "Nom", accessor: (a) => a.nom },
+                    { header: "Boutique", accessor: (a) => nameOf(a.boutique_id) },
+                    { header: "Couleur", accessor: (a) => a.couleur },
+                    { header: "Taille", accessor: (a) => a.taille ?? "—" },
+                    { header: "Catégorie", accessor: (a) => CATEGORIES.find((c) => c.value === a.categorie)?.label ?? "" },
+                    { header: "Entrée", accessor: (a) => a.quantiteEntree, align: "right" },
+                    { header: "Vendue", accessor: (a) => a.quantiteVendue, align: "right" },
+                    { header: "Restante", accessor: (a) => a.quantiteRestante, align: "right" },
+                    { header: "Prix", accessor: (a) => fmt(a.prix), align: "right" },
+                  ],
+                  rows: filtered,
+                  totals: [
+                    { label: "Articles", value: String(filtered.length) },
+                    { label: "Qté entrée", value: String(totalEntree) },
+                    { label: "Qté restante", value: String(totalRestant) },
+                    { label: "Valeur stock", value: fmt(totalValeur) },
+                  ],
+                })
+              }
+              disabled={filtered.length === 0}
+            >
+              <FileDown className="h-4 w-4" /> PDF
+            </Button>
+            <ArticleFormDialog
+              boutiques={boutiques}
+              onCreate={(a) => setArticles((prev) => [a, ...prev])}
+            />
+          </div>
         </div>
 
         {/* Filtres principaux */}
