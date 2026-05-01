@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Store, Package, ShoppingBag, User, MapPin, Phone, ImageOff, Tag } from "lucide-react";
+import { ArrowLeft, Store, Package, ShoppingBag, User, MapPin, Phone, ImageOff, Tag, FileDown } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ArticleFormDialog from "./ArticleFormDialog";
 import VentesTable from "./VentesTable";
+import ImageLightbox from "./ImageLightbox";
+import { exportToPdf } from "@/lib/pdfExport";
 import {
   type Article, type AppUser, type Boutique, type Vente, type StatutArticle,
   CATEGORIES, STATUTS, formatMoney,
@@ -22,12 +24,17 @@ interface Props {
   onCreateArticle: (a: Article) => void;
 }
 
-const ArticleCard = ({ a }: { a: Article }) => {
+const ArticleCard = ({ a, onZoom }: { a: Article; onZoom: (a: Article) => void }) => {
   const promo = a.promotions[0];
   const lowStock = a.quantiteRestante <= 6;
   return (
     <div className="group rounded-xl border border-border/60 bg-card overflow-hidden shadow-card hover:shadow-glow hover:border-primary/40 transition-all">
-      <div className="relative aspect-square bg-gradient-to-br from-muted/40 to-muted/10 flex items-center justify-center overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onZoom(a)}
+        className="relative aspect-square w-full bg-gradient-to-br from-muted/40 to-muted/10 flex items-center justify-center overflow-hidden cursor-zoom-in"
+        aria-label={`Voir ${a.nom} en grand`}
+      >
         {a.photo ? (
           <img src={a.photo} alt={a.nom} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
         ) : (
@@ -44,7 +51,7 @@ const ArticleCard = ({ a }: { a: Article }) => {
         <div className="absolute top-2 right-2 rounded-md bg-background/85 backdrop-blur px-2 py-0.5 text-[10px] font-mono">
           {a.code}
         </div>
-      </div>
+      </button>
 
       <div className="p-3 space-y-2">
         <h4 className="font-semibold leading-tight line-clamp-2 text-sm">{a.nom}</h4>
