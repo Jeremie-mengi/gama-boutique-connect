@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ROLES, roleLabel, type AppUser, type Boutique, type Role, type DossierFile } from "@/lib/mockData";
+import { ROLES, SEXES, roleLabel, sexeLabel, type AppUser, type Boutique, type Role, type Sexe, type DossierFile } from "@/lib/mockData";
 
 interface Props {
   users: AppUser[];
@@ -24,11 +24,13 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
   const [toDelete, setToDelete] = useState<AppUser | null>(null);
   const [formRole, setFormRole] = useState<Role>("vendeur");
   const [formBoutique, setFormBoutique] = useState<string>("none");
+  const [formSexe, setFormSexe] = useState<Sexe>("M");
 
   const openCreate = () => {
     setEditing(null);
     setFormRole("vendeur");
     setFormBoutique("none");
+    setFormSexe("M");
     setOpen(true);
   };
 
@@ -36,6 +38,7 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
     setEditing(u);
     setFormRole(u.role);
     setFormBoutique(u.boutique_id ?? "none");
+    setFormSexe(u.sexe ?? "M");
     setOpen(true);
   };
 
@@ -44,16 +47,17 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
     const fd = new FormData(e.currentTarget);
     const full_name = String(fd.get("full_name") ?? "").trim();
     const email = String(fd.get("email") ?? "").trim();
+    const telephone = String(fd.get("telephone") ?? "").trim() || null;
     if (!full_name || !email) {
       toast.error("Nom et email requis");
       return;
     }
     const boutique_id = formBoutique === "none" ? null : formBoutique;
     if (editing) {
-      setUsers((prev) => prev.map((u) => u.id === editing.id ? { ...u, full_name, email, role: formRole, boutique_id } : u));
+      setUsers((prev) => prev.map((u) => u.id === editing.id ? { ...u, full_name, email, telephone, sexe: formSexe, role: formRole, boutique_id } : u));
       toast.success("Utilisateur modifié");
     } else {
-      setUsers((prev) => [{ id: crypto.randomUUID(), full_name, email, role: formRole, boutique_id }, ...prev]);
+      setUsers((prev) => [{ id: crypto.randomUUID(), full_name, email, telephone, sexe: formSexe, role: formRole, boutique_id }, ...prev]);
       toast.success("Utilisateur créé");
     }
     setOpen(false);
@@ -106,6 +110,21 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
                 <Input id="email" name="email" type="email" required defaultValue={editing?.email ?? ""} placeholder="aicha@gama.com" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="telephone">Téléphone</Label>
+                  <Input id="telephone" name="telephone" type="tel" defaultValue={editing?.telephone ?? ""} placeholder="+225 07 00 00 00" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sexe</Label>
+                  <Select value={formSexe} onValueChange={(v) => setFormSexe(v as Sexe)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SEXES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Rôle</Label>
@@ -164,6 +183,8 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
               <TableRow>
                 <TableHead>Nom</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Téléphone</TableHead>
+                <TableHead>Sexe</TableHead>
                 <TableHead>Rôle</TableHead>
                 <TableHead>Boutique</TableHead>
                 <TableHead>Dossier de l'agent</TableHead>
@@ -175,6 +196,8 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.full_name}</TableCell>
                   <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                  <TableCell className="text-muted-foreground">{u.telephone ?? "—"}</TableCell>
+                  <TableCell>{sexeLabel(u.sexe)}</TableCell>
                   <TableCell>
                     <Badge variant={u.role === "admin" ? "default" : "secondary"} className="gap-1">
                       {u.role === "admin" && <Shield className="h-3 w-3" />}
