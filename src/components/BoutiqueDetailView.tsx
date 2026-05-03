@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Store, Package, ShoppingBag, User, MapPin, Phone, ImageOff, Tag, FileDown } from "lucide-react";
+import { ArrowLeft, Store, Package, ShoppingBag, User, MapPin, Phone, ImageOff, Tag } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ArticleFormDialog from "./ArticleFormDialog";
 import VentesTable from "./VentesTable";
 import ImageLightbox from "./ImageLightbox";
-import { exportToPdf } from "@/lib/pdfExport";
+import ExportButtons from "./ExportButtons";
 import {
   type Article, type AppUser, type Boutique, type Vente, type StatutArticle,
   CATEGORIES, STATUTS, formatMoney,
@@ -147,29 +147,22 @@ const BoutiqueDetailView = ({ boutique, ventes, articles, users, onBack, onCreat
             <TabsTrigger value="vendeur" className="gap-2"><User className="h-4 w-4" /> Vendeur ({bUsers.length})</TabsTrigger>
           </TabsList>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                exportToPdf({
-                  title: `Articles · ${boutique.nom}`,
-                  subtitle: `${visibleArticles.length} article(s)`,
-                  columns: [
-                    { header: "Code", accessor: (a: Article) => a.code },
-                    { header: "Nom", accessor: (a) => a.nom },
-                    { header: "Couleur", accessor: (a) => a.couleur },
-                    { header: "Taille", accessor: (a) => a.taille ?? "—" },
-                    { header: "Statut", accessor: (a) => STATUTS.find((s) => s.value === a.statut)?.label ?? "" },
-                    { header: "Restant", accessor: (a) => a.quantiteRestante, align: "right" },
-                    { header: "Prix", accessor: (a) => formatMoney(a.prix, a.devise ?? "CDF"), align: "right" },
-                  ],
-                  rows: visibleArticles,
-                })
-              }
+            <ExportButtons
+              title={`Articles · ${boutique.nom}`}
+              subtitle={`${visibleArticles.length} article(s)`}
+              columns={[
+                { header: "Code", accessor: (a: Article) => a.code },
+                { header: "Nom", accessor: (a: Article) => a.nom },
+                { header: "Couleur", accessor: (a: Article) => a.couleur },
+                { header: "Taille", accessor: (a: Article) => a.taille ?? "—" },
+                { header: "Statut", accessor: (a: Article) => STATUTS.find((s) => s.value === a.statut)?.label ?? "" },
+                { header: "Restant", accessor: (a: Article) => a.quantiteRestante, align: "right" },
+                { header: "Prix", accessor: (a: Article) => formatMoney(a.prix, a.devise ?? "CDF"), align: "right" },
+              ]}
+              rows={visibleArticles}
+              imageAccessor={(a: Article) => a.photo}
               disabled={visibleArticles.length === 0}
-            >
-              <FileDown className="h-4 w-4" /> PDF
-            </Button>
+            />
             <ArticleFormDialog
               boutiques={[boutique]}
               lockedBoutiqueId={boutique.id}
