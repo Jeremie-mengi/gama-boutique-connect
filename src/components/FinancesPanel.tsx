@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { ArrowDownCircle, ArrowUpCircle, Wallet, Plus, FileDown } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Wallet, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import type { Boutique, Depense, Vente, Devise } from "@/lib/mockData";
 import { DEVISES, formatMoney } from "@/lib/mockData";
-import { exportToPdf } from "@/lib/pdfExport";
+import ExportButtons from "./ExportButtons";
 
 interface Props {
   boutiques: Boutique[];
@@ -85,37 +85,28 @@ const FinancesPanel = ({ boutiques, ventes, depenses, setDepenses }: Props) => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const totalsList = DEVISES.flatMap((d) => {
-                const t = totals[d.value];
-                return [
-                  { label: `Entrées ${d.value}`, value: formatMoney(t.entrees, d.value) },
-                  { label: `Sorties ${d.value}`, value: formatMoney(t.sorties, d.value) },
-                  { label: `Solde ${d.value}`, value: formatMoney(t.entrees - t.sorties, d.value) },
-                ];
-              });
-              exportToPdf({
-                title: "Finances",
-                subtitle: `${movements.length} mouvement(s)`,
-                columns: [
-                  { header: "Date", accessor: (d: Depense) => fmtDate(d.date) },
-                  { header: "Type", accessor: (d) => (d.type === "entree" ? "Entrée" : "Sortie") },
-                  { header: "Boutique", accessor: (d) => nameOf(d.boutique_id) },
-                  { header: "Libellé", accessor: (d) => d.libelle },
-                  { header: "Catégorie", accessor: (d) => d.categorie },
-                  { header: "Montant", accessor: (d) => `${d.type === "entree" ? "+" : "-"} ${formatMoney(d.montant, d.devise)}`, align: "right" },
-                ],
-                rows: movements,
-                totals: totalsList,
-              });
-            }}
+          <ExportButtons
+            title="Finances"
+            subtitle={`${movements.length} mouvement(s)`}
+            columns={[
+              { header: "Date", accessor: (d: Depense) => fmtDate(d.date) },
+              { header: "Type", accessor: (d: Depense) => (d.type === "entree" ? "Entrée" : "Sortie") },
+              { header: "Boutique", accessor: (d: Depense) => nameOf(d.boutique_id) },
+              { header: "Libellé", accessor: (d: Depense) => d.libelle },
+              { header: "Catégorie", accessor: (d: Depense) => d.categorie },
+              { header: "Montant", accessor: (d: Depense) => `${d.type === "entree" ? "+" : "-"} ${formatMoney(d.montant, d.devise)}`, align: "right" },
+            ]}
+            rows={movements}
+            totals={DEVISES.flatMap((d) => {
+              const t = totals[d.value];
+              return [
+                { label: `Entrées ${d.value}`, value: formatMoney(t.entrees, d.value) },
+                { label: `Sorties ${d.value}`, value: formatMoney(t.sorties, d.value) },
+                { label: `Solde ${d.value}`, value: formatMoney(t.entrees - t.sorties, d.value) },
+              ];
+            })}
             disabled={movements.length === 0}
-          >
-            <FileDown className="h-4 w-4" /> PDF
-          </Button>
+          />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button variant="hero"><Plus className="h-4 w-4" /> Nouveau mouvement</Button>
