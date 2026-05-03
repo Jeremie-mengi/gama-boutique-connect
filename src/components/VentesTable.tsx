@@ -68,9 +68,15 @@ const VentesTable = ({ boutiques, ventes, articles = [], title = "Tableau des ve
                 <div className="text-sm font-bold text-primary">{formatMoney(total, dev as any)}</div>
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={handlePdf} disabled={sorted.length === 0}>
-              <FileDown className="h-4 w-4" /> PDF
-            </Button>
+            <ExportButtons
+              title={title}
+              subtitle={`${sorted.length} transaction(s)`}
+              columns={exportColumns}
+              rows={sorted}
+              totals={exportTotals}
+              imageAccessor={(v: Vente) => photoOf(v)}
+              disabled={sorted.length === 0}
+            />
           </div>
         </div>
 
