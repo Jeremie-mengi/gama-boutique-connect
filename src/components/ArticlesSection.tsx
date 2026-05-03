@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { Package, Search, X, ImageOff, Tag, FileDown } from "lucide-react";
+import { Package, Search, X, ImageOff, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ArticleFormDialog from "./ArticleFormDialog";
 import ImageLightbox from "./ImageLightbox";
-import { exportToPdf } from "@/lib/pdfExport";
+import ExportButtons from "./ExportButtons";
 import {
   type Article, type Boutique, type StatutArticle,
   CATEGORIES, STATUTS, formatMoney,
@@ -144,32 +144,25 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                exportToPdf({
-                  title: "Articles",
-                  subtitle: `${filtered.length} article(s) filtré(s)`,
-                  columns: [
-                    { header: "Code", accessor: (a: Article) => a.code },
-                    { header: "Nom", accessor: (a) => a.nom },
-                    { header: "Boutique", accessor: (a) => nameOf(a.boutique_id) },
-                    { header: "Couleur", accessor: (a) => a.couleur },
-                    { header: "Taille", accessor: (a) => a.taille ?? "—" },
-                    { header: "Catégorie", accessor: (a) => CATEGORIES.find((c) => c.value === a.categorie)?.label ?? "" },
-                    { header: "Restant", accessor: (a) => a.quantiteRestante, align: "right" },
-                    { header: "Vendu", accessor: (a) => a.quantiteVendue, align: "right" },
-                    { header: "Prix", accessor: (a) => formatMoney(a.prix, a.devise ?? "CDF"), align: "right" },
-                    { header: "Promo", accessor: (a) => a.promotions[0] ? `-${a.promotions[0].pourcentage}%` : "—" },
-                  ],
-                  rows: filtered,
-                })
-              }
+            <ExportButtons
+              title="Articles"
+              subtitle={`${filtered.length} article(s) filtré(s)`}
+              columns={[
+                { header: "Code", accessor: (a: Article) => a.code },
+                { header: "Nom", accessor: (a: Article) => a.nom },
+                { header: "Boutique", accessor: (a: Article) => nameOf(a.boutique_id) },
+                { header: "Couleur", accessor: (a: Article) => a.couleur },
+                { header: "Taille", accessor: (a: Article) => a.taille ?? "—" },
+                { header: "Catégorie", accessor: (a: Article) => CATEGORIES.find((c) => c.value === a.categorie)?.label ?? "" },
+                { header: "Restant", accessor: (a: Article) => a.quantiteRestante, align: "right" },
+                { header: "Vendu", accessor: (a: Article) => a.quantiteVendue, align: "right" },
+                { header: "Prix", accessor: (a: Article) => formatMoney(a.prix, a.devise ?? "CDF"), align: "right" },
+                { header: "Promo", accessor: (a: Article) => a.promotions[0] ? `-${a.promotions[0].pourcentage}%` : "—" },
+              ]}
+              rows={filtered}
+              imageAccessor={(a: Article) => a.photo}
               disabled={filtered.length === 0}
-            >
-              <FileDown className="h-4 w-4" /> PDF
-            </Button>
+            />
             <ArticleFormDialog
               boutiques={boutiques}
               onCreate={(a) => setArticles((prev) => [a, ...prev])}

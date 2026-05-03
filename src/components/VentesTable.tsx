@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Receipt, FileDown, ImageOff } from "lucide-react";
+import { Receipt, ImageOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,7 +8,7 @@ import VentesFilters, { applyVentesFilters, emptyFilters, type VentesFilterState
 import VenteDetailDialog from "./VenteDetailDialog";
 import type { Article, Boutique, Vente } from "@/lib/mockData";
 import { formatMoney } from "@/lib/mockData";
-import { exportToPdf } from "@/lib/pdfExport";
+import ExportButtons from "./ExportButtons";
 
 interface Props {
   boutiques: Boutique[];
@@ -35,23 +35,16 @@ const VentesTable = ({ boutiques, ventes, articles = [], title = "Tableau des ve
     return acc;
   }, {});
 
-  const handlePdf = () => {
-    exportToPdf({
-      title,
-      subtitle: `${sorted.length} transaction(s)`,
-      columns: [
-        { header: "Date", accessor: (v: Vente) => fmtDate(v.date) },
-        { header: "Code", accessor: (v) => v.code ?? "—" },
-        { header: "Article", accessor: (v) => v.article },
-        { header: "Couleur", accessor: (v) => v.couleur ?? "—" },
-        ...(showBoutique ? [{ header: "Boutique", accessor: (v: Vente) => nameOf(v.boutique_id) }] : []),
-        { header: "Qté", accessor: (v) => v.quantite, align: "right" as const },
-        { header: "Montant", accessor: (v) => formatMoney(v.montant, v.devise), align: "right" as const },
-      ],
-      rows: sorted,
-      totals: Object.entries(totals).map(([dev, t]) => ({ label: `Total ${dev}`, value: formatMoney(t, dev as any) })),
-    });
-  };
+  const exportColumns = [
+    { header: "Date", accessor: (v: Vente) => fmtDate(v.date) },
+    { header: "Code", accessor: (v: Vente) => v.code ?? "—" },
+    { header: "Article", accessor: (v: Vente) => v.article },
+    { header: "Couleur", accessor: (v: Vente) => v.couleur ?? "—" },
+    ...(showBoutique ? [{ header: "Boutique", accessor: (v: Vente) => nameOf(v.boutique_id) }] : []),
+    { header: "Qté", accessor: (v: Vente) => v.quantite, align: "right" as const },
+    { header: "Montant", accessor: (v: Vente) => formatMoney(v.montant, v.devise), align: "right" as const },
+  ];
+  const exportTotals = Object.entries(totals).map(([dev, t]) => ({ label: `Total ${dev}`, value: formatMoney(t, dev as any) }));
 
   return (
     <div className="space-y-4">
