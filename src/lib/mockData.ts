@@ -39,10 +39,22 @@ export interface DossierFile {
   uploadedAt: string;
 }
 
+export type Sexe = "M" | "F" | "AUTRE";
+
+export const SEXES: { value: Sexe; label: string }[] = [
+  { value: "M", label: "Masculin" },
+  { value: "F", label: "Féminin" },
+  { value: "AUTRE", label: "Autre" },
+];
+
+export const sexeLabel = (s?: Sexe | null) => SEXES.find((x) => x.value === s)?.label ?? "—";
+
 export interface AppUser {
   id: string;
   full_name: string;
   email: string;
+  telephone?: string | null;
+  sexe?: Sexe | null;
   role: Role;
   boutique_id: string | null;
   dossier?: DossierFile | null;
@@ -55,10 +67,10 @@ export const mockBoutiques: Boutique[] = [
 ];
 
 export const mockUsers: AppUser[] = [
-  { id: "u1", full_name: "Aïcha Diallo", email: "aicha@gama.com", role: "admin", boutique_id: null },
-  { id: "u2", full_name: "Moussa Koné", email: "moussa@gama.com", role: "vendeur", boutique_id: "b1" },
-  { id: "u3", full_name: "Fatou Bamba", email: "fatou@gama.com", role: "vendeur", boutique_id: "b2" },
-  { id: "u4", full_name: "Ismaël Touré", email: "ismael@gama.com", role: "vendeur", boutique_id: null },
+  { id: "u1", full_name: "Aïcha Diallo", email: "aicha@gama.com", telephone: "+225 07 11 22 33", sexe: "F", role: "admin", boutique_id: null },
+  { id: "u2", full_name: "Moussa Koné", email: "moussa@gama.com", telephone: "+225 07 44 55 66", sexe: "M", role: "vendeur", boutique_id: "b1" },
+  { id: "u3", full_name: "Fatou Bamba", email: "fatou@gama.com", telephone: "+225 07 77 88 99", sexe: "F", role: "vendeur", boutique_id: "b2" },
+  { id: "u4", full_name: "Ismaël Touré", email: "ismael@gama.com", telephone: null, sexe: "M", role: "vendeur", boutique_id: null },
 ];
 
 export const currentMockUser: AppUser = mockUsers[0];
