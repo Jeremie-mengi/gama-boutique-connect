@@ -196,6 +196,8 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.full_name}</TableCell>
                   <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                  <TableCell className="text-muted-foreground">{u.telephone ?? "—"}</TableCell>
+                  <TableCell>{sexeLabel(u.sexe)}</TableCell>
                   <TableCell>
                     <Badge variant={u.role === "admin" ? "default" : "secondary"} className="gap-1">
                       {u.role === "admin" && <Shield className="h-3 w-3" />}
