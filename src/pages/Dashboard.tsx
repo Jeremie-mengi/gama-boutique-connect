@@ -129,23 +129,6 @@ const Dashboard = () => {
     }
   };
 
-  if (!isAdmin) {
-    return (
-      <VendeurDashboard
-        currentUser={currentUser}
-        boutiqueName={currentBoutiqueName}
-        articles={articles.filter((a) => !currentUser.boutique_id || a.boutique_id === currentUser.boutique_id)}
-        ventes={ventes.filter((v) => !currentUser.boutique_id || v.boutique_id === currentUser.boutique_id)}
-        depenses={depenses.filter((d) => !currentUser.boutique_id || d.boutique_id === currentUser.boutique_id)}
-        boutiques={boutiques}
-        setArticles={setArticles}
-        setDepenses={setDepenses}
-        onSwitchRole={handleSwitchRole}
-        onLogout={() => navigate("/auth")}
-      />
-    );
-  }
-
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
