@@ -131,36 +131,19 @@ const Dashboard = () => {
   };
 
   if (!isAdmin) {
-    // Vue vendeur (header simple, pas de sidebar)
     return (
-      <div className="min-h-screen">
-        <header className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-40">
-          <div className="container flex h-16 items-center justify-between">
-            <div className="font-bold">GAMA Boutique</div>
-            <div className="flex items-center gap-3">
-              <Select value={currentUser.role} onValueChange={(v) => handleSwitchRole(v as Role)}>
-                <SelectTrigger className="w-[130px] h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="vendeur">Vendeur</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
-                <LogOut className="h-4 w-4" /> Quitter
-              </Button>
-            </div>
-          </div>
-        </header>
-        <main className="container py-8">
-          <Card className="p-8 text-center shadow-card border-border/60">
-            <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mb-4">
-              <User className="h-7 w-7 text-primary" />
-            </div>
-            <h2 className="font-bold text-2xl mb-2">{currentBoutiqueName ?? "En attente d'assignation"}</h2>
-            <p className="text-muted-foreground">Votre interface de vente apparaîtra ici prochainement.</p>
-          </Card>
-        </main>
-      </div>
+      <VendeurDashboard
+        currentUser={currentUser}
+        boutiqueName={currentBoutiqueName}
+        articles={articles.filter((a) => !currentUser.boutique_id || a.boutique_id === currentUser.boutique_id)}
+        ventes={ventes.filter((v) => !currentUser.boutique_id || v.boutique_id === currentUser.boutique_id)}
+        depenses={depenses.filter((d) => !currentUser.boutique_id || d.boutique_id === currentUser.boutique_id)}
+        boutiques={boutiques}
+        setArticles={setArticles}
+        setDepenses={setDepenses}
+        onSwitchRole={handleSwitchRole}
+        onLogout={() => navigate("/auth")}
+      />
     );
   }
 
