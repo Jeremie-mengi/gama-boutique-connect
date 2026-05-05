@@ -61,6 +61,10 @@ const Dashboard = () => {
   const selectedBoutiqueObj = useMemo(() => isAll ? null : boutiques.find((b) => b.id === selectedBoutique) ?? null, [boutiques, selectedBoutique, isAll]);
 
   const handleSwitchRole = (role: Role) => {
+    if (role !== "admin") {
+      navigate("/user-boutique");
+      return;
+    }
     const target = users.find((u) => u.role === role) ?? currentUser;
     setCurrentUser(target);
   };
