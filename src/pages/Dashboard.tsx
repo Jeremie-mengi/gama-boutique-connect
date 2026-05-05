@@ -47,11 +47,6 @@ const Dashboard = () => {
   const [section, setSection] = useState<SectionKey>("overview");
   const [openedBoutiqueId, setOpenedBoutiqueId] = useState<string | null>(null);
 
-  const isAdmin = currentUser.role === "admin";
-  const currentBoutiqueName = useMemo(
-    () => boutiques.find((b) => b.id === currentUser.boutique_id)?.nom ?? null,
-    [boutiques, currentUser]
-  );
 
   const isAll = selectedBoutique === "all";
   const fVentes = useMemo(() => isAll ? ventes : ventes.filter((v) => v.boutique_id === selectedBoutique), [ventes, selectedBoutique, isAll]);
