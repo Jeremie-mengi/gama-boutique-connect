@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import AppSidebar, { type SectionKey } from "@/components/AppSidebar";
-import VendeurDashboard from "@/components/VendeurDashboard";
+
 import BoutiquesManager from "@/components/BoutiquesManager";
 import UsersManager from "@/components/UsersManager";
 import StatsCards from "@/components/StatsCards";
