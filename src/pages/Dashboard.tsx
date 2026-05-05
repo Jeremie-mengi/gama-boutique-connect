@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import AppSidebar, { type SectionKey } from "@/components/AppSidebar";
-import VendeurDashboard from "@/components/VendeurDashboard";
+
 import BoutiquesManager from "@/components/BoutiquesManager";
 import UsersManager from "@/components/UsersManager";
 import StatsCards from "@/components/StatsCards";
@@ -47,11 +47,6 @@ const Dashboard = () => {
   const [section, setSection] = useState<SectionKey>("overview");
   const [openedBoutiqueId, setOpenedBoutiqueId] = useState<string | null>(null);
 
-  const isAdmin = currentUser.role === "admin";
-  const currentBoutiqueName = useMemo(
-    () => boutiques.find((b) => b.id === currentUser.boutique_id)?.nom ?? null,
-    [boutiques, currentUser]
-  );
 
   const isAll = selectedBoutique === "all";
   const fVentes = useMemo(() => isAll ? ventes : ventes.filter((v) => v.boutique_id === selectedBoutique), [ventes, selectedBoutique, isAll]);
@@ -61,6 +56,10 @@ const Dashboard = () => {
   const selectedBoutiqueObj = useMemo(() => isAll ? null : boutiques.find((b) => b.id === selectedBoutique) ?? null, [boutiques, selectedBoutique, isAll]);
 
   const handleSwitchRole = (role: Role) => {
+    if (role !== "admin") {
+      navigate("/user-boutique");
+      return;
+    }
     const target = users.find((u) => u.role === role) ?? currentUser;
     setCurrentUser(target);
   };
@@ -128,23 +127,6 @@ const Dashboard = () => {
         return <RapportSection />;
     }
   };
-
-  if (!isAdmin) {
-    return (
-      <VendeurDashboard
-        currentUser={currentUser}
-        boutiqueName={currentBoutiqueName}
-        articles={articles.filter((a) => !currentUser.boutique_id || a.boutique_id === currentUser.boutique_id)}
-        ventes={ventes.filter((v) => !currentUser.boutique_id || v.boutique_id === currentUser.boutique_id)}
-        depenses={depenses.filter((d) => !currentUser.boutique_id || d.boutique_id === currentUser.boutique_id)}
-        boutiques={boutiques}
-        setArticles={setArticles}
-        setDepenses={setDepenses}
-        onSwitchRole={handleSwitchRole}
-        onLogout={() => navigate("/auth")}
-      />
-    );
-  }
 
   return (
     <SidebarProvider>
