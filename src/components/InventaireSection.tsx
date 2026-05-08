@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
-import { Package, CalendarRange, Search, X } from "lucide-react";
+import { Package, CalendarRange, Search, X, ImageOff } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ArticleFormDialog from "./ArticleFormDialog";
+import ArticleExcelImport from "./ArticleExcelImport";
 import ExportButtons from "./ExportButtons";
+import ImageLightbox from "./ImageLightbox";
+import QrCode from "./QrCode";
 import { type Article, type Boutique, CATEGORIES } from "@/lib/mockData";
 
 interface Props {
@@ -51,6 +54,7 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
   const [restVal, setRestVal] = useState("");
   const [vendOp, setVendOp] = useState<NumOp>("all");
   const [vendVal, setVendVal] = useState("");
+  const [zoomArticle, setZoomArticle] = useState<Article | null>(null);
 
   const filtered = useMemo(() => {
     const fromTs = +new Date(from);
@@ -123,6 +127,10 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
                 { label: "Valeur stock", value: fmt(totalValeur) },
               ]}
               disabled={filtered.length === 0}
+            />
+            <ArticleExcelImport
+              boutiques={boutiques}
+              onImport={(list) => setArticles((prev) => [...list, ...prev])}
             />
             <ArticleFormDialog
               boutiques={boutiques}
@@ -284,6 +292,8 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Photo</TableHead>
+                  <TableHead>QR</TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead>Nom</TableHead>
                   <TableHead>Boutique</TableHead>
@@ -300,6 +310,23 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
               <TableBody>
                 {filtered.map((a) => (
                   <TableRow key={a.id}>
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={() => a.photo && setZoomArticle(a)}
+                        className="h-12 w-12 rounded-md overflow-hidden bg-muted/30 flex items-center justify-center cursor-zoom-in border border-border/60"
+                        aria-label={`Voir ${a.nom}`}
+                      >
+                        {a.photo ? (
+                          <img src={a.photo} alt={a.nom} className="h-full w-full object-cover" loading="lazy" />
+                        ) : (
+                          <ImageOff className="h-4 w-4 text-muted-foreground/60" />
+                        )}
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      <QrCode value={`${a.code}|${a.nom}`} size={48} />
+                    </TableCell>
                     <TableCell className="font-mono text-xs">{a.code}</TableCell>
                     <TableCell className="font-medium">{a.nom}</TableCell>
                     <TableCell className="text-muted-foreground">{nameOf(a.boutique_id)}</TableCell>
@@ -330,6 +357,13 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
           </div>
         )}
       </Card>
+
+      <ImageLightbox
+        open={!!zoomArticle}
+        onOpenChange={(v) => !v && setZoomArticle(null)}
+        images={zoomArticle?.photo ? [zoomArticle.photo] : []}
+        title={zoomArticle?.nom}
+      />
     </div>
   );
 };
