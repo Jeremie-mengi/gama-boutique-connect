@@ -163,6 +163,26 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Dossier de l'agent</Label>
+                <input ref={dossierInputRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip" onChange={onPickDossier} />
+                {formDossier ? (
+                  <div className="flex items-center gap-2 rounded-md border border-border/60 bg-card/40 px-2 py-2">
+                    <FileText className="h-4 w-4 text-primary shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium truncate" title={formDossier.name}>{formDossier.name}</div>
+                      <div className="text-[10px] text-muted-foreground">{fmtSize(formDossier.size)}</div>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6" onClick={() => setFormDossier(null)}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" onClick={() => dossierInputRef.current?.click()}>
+                    <Upload className="h-3.5 w-3.5" /> Uploader un fichier
+                  </Button>
+                )}
+              </div>
               <DialogFooter>
                 <Button type="submit" variant="hero">{editing ? "Enregistrer" : "Créer"}</Button>
               </DialogFooter>
@@ -237,7 +257,17 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <DossierCell user={u} onUpdate={(d) => updateUser(u.id, { dossier: d })} />
+                    {u.dossier ? (
+                      <div className="flex items-center gap-2 rounded-md border border-border/60 bg-card/40 px-2 py-1 max-w-[220px]">
+                        <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-medium truncate" title={u.dossier.name}>{u.dossier.name}</div>
+                          <div className="text-[10px] text-muted-foreground">{fmtSize(u.dossier.size)}</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Aucun dossier</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -256,54 +286,6 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
         </div>
       )}
     </Card>
-  );
-};
-
-const DossierCell = ({ user, onUpdate }: { user: AppUser; onUpdate: (d: DossierFile | null) => void }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const dossier = user.dossier;
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    onUpdate({
-      name: f.name,
-      size: f.size,
-      type: f.type,
-      uploadedAt: new Date().toISOString(),
-    });
-    toast.success(`Dossier de ${user.full_name} uploadé`);
-    e.target.value = "";
-  };
-
-  const fmtSize = (b: number) => b < 1024 ? `${b} o` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} Ko` : `${(b / 1024 / 1024).toFixed(1)} Mo`;
-
-  return (
-    <div className="flex items-center gap-2">
-      <input
-        ref={inputRef}
-        type="file"
-        className="hidden"
-        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.zip"
-        onChange={handleFile}
-      />
-      {dossier ? (
-        <div className="flex items-center gap-2 rounded-md border border-border/60 bg-card/40 px-2 py-1 max-w-[220px]">
-          <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
-          <div className="min-w-0 flex-1">
-            <div className="text-xs font-medium truncate" title={dossier.name}>{dossier.name}</div>
-            <div className="text-[10px] text-muted-foreground">{fmtSize(dossier.size)}</div>
-          </div>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { onUpdate(null); toast.success("Dossier retiré"); }}>
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-      ) : (
-        <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
-          <Upload className="h-3.5 w-3.5" /> Uploader
-        </Button>
-      )}
-    </div>
   );
 };
 
