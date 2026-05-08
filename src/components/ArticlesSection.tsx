@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ArticleFormDialog from "./ArticleFormDialog";
+import ArticleExcelImport from "./ArticleExcelImport";
 import ImageLightbox from "./ImageLightbox";
 import ExportButtons from "./ExportButtons";
+import QrCode from "./QrCode";
 import {
   type Article, type Boutique, type StatutArticle,
   CATEGORIES, STATUTS, formatMoney,
@@ -59,8 +61,13 @@ const ArticleCard = ({ a, boutiqueName, onZoom }: { a: Article; boutiqueName: st
         </div>
       </button>
       <div className="p-3 space-y-2">
-        <h4 className="font-semibold leading-tight line-clamp-2 text-sm">{a.nom}</h4>
-        <div className="text-[11px] text-muted-foreground truncate">{boutiqueName}</div>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h4 className="font-semibold leading-tight line-clamp-2 text-sm">{a.nom}</h4>
+            <div className="text-[11px] text-muted-foreground truncate">{boutiqueName}</div>
+          </div>
+          <QrCode value={`${a.code}|${a.nom}`} size={48} className="shrink-0" />
+        </div>
         <div className="flex flex-wrap gap-1">
           <Badge variant="outline" className="text-[10px] px-1.5 py-0">{a.couleur}</Badge>
           {a.taille && <Badge variant="outline" className="text-[10px] px-1.5 py-0">{a.taille}</Badge>}
@@ -162,6 +169,10 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
               rows={filtered}
               imageAccessor={(a: Article) => a.photo}
               disabled={filtered.length === 0}
+            />
+            <ArticleExcelImport
+              boutiques={boutiques}
+              onImport={(list) => setArticles((prev) => [...list, ...prev])}
             />
             <ArticleFormDialog
               boutiques={boutiques}
