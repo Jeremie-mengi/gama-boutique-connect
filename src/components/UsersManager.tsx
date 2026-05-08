@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Plus, Users, Shield, Upload, FileText, X, Pencil, Trash2 } from "lucide-react";
+// (DossierCell upload retiré : l'upload se fait à la création.)
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,12 +26,15 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
   const [formRole, setFormRole] = useState<Role>("vendeur");
   const [formBoutique, setFormBoutique] = useState<string>("none");
   const [formSexe, setFormSexe] = useState<Sexe>("M");
+  const [formDossier, setFormDossier] = useState<DossierFile | null>(null);
+  const dossierInputRef = useRef<HTMLInputElement>(null);
 
   const openCreate = () => {
     setEditing(null);
     setFormRole("vendeur");
     setFormBoutique("none");
     setFormSexe("M");
+    setFormDossier(null);
     setOpen(true);
   };
 
@@ -39,7 +43,15 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
     setFormRole(u.role);
     setFormBoutique(u.boutique_id ?? "none");
     setFormSexe(u.sexe ?? "M");
+    setFormDossier(u.dossier ?? null);
     setOpen(true);
+  };
+
+  const onPickDossier = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFormDossier({ name: f.name, size: f.size, type: f.type, uploadedAt: new Date().toISOString() });
+    e.target.value = "";
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -54,14 +66,16 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
     }
     const boutique_id = formBoutique === "none" ? null : formBoutique;
     if (editing) {
-      setUsers((prev) => prev.map((u) => u.id === editing.id ? { ...u, full_name, email, telephone, sexe: formSexe, role: formRole, boutique_id } : u));
+      setUsers((prev) => prev.map((u) => u.id === editing.id ? { ...u, full_name, email, telephone, sexe: formSexe, role: formRole, boutique_id, dossier: formDossier } : u));
       toast.success("Utilisateur modifié");
     } else {
-      setUsers((prev) => [{ id: crypto.randomUUID(), full_name, email, telephone, sexe: formSexe, role: formRole, boutique_id }, ...prev]);
+      setUsers((prev) => [{ id: crypto.randomUUID(), full_name, email, telephone, sexe: formSexe, role: formRole, boutique_id, dossier: formDossier }, ...prev]);
       toast.success("Utilisateur créé");
     }
     setOpen(false);
   };
+
+  const fmtSize = (b: number) => b < 1024 ? `${b} o` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} Ko` : `${(b / 1024 / 1024).toFixed(1)} Mo`;
 
   const handleDelete = () => {
     if (!toDelete) return;
