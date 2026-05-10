@@ -2,6 +2,7 @@
 // Les deux fonctions partagent la même définition de colonnes pour rester DRY.
 
 import ExcelJS from "exceljs";
+import QRCode from "qrcode";
 
 export interface PdfColumn<T> {
   header: string;
@@ -17,6 +18,31 @@ export interface PdfExportOptions<T> {
   totals?: { label: string; value: string }[];
   /** Optionnel: récupère l'URL de l'image associée à la ligne (article photo) */
   imageAccessor?: (row: T) => string | null | undefined;
+  /** Optionnel: contenu encodé dans un QR code par ligne (ex: code|nom) */
+  qrAccessor?: (row: T) => string | null | undefined;
+}
+
+async function qrToDataUrl(value: string): Promise<string | null> {
+  try {
+    return await QRCode.toDataURL(value, { margin: 1, width: 160 });
+  } catch {
+    return null;
+  }
+}
+
+/** Pré-calcule les data URLs des QR pour éviter les async en plein rendu PDF. */
+async function buildQrMap<T>(rows: T[], qrAccessor?: (row: T) => string | null | undefined) {
+  const map = new Map<number, string>();
+  if (!qrAccessor) return map;
+  await Promise.all(
+    rows.map(async (r, i) => {
+      const v = qrAccessor(r);
+      if (!v) return;
+      const url = await qrToDataUrl(v);
+      if (url) map.set(i, url);
+    })
+  );
+  return map;
 }
 
 const escapeHtml = (s: string | number) =>
