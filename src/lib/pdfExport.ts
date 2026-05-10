@@ -52,12 +52,14 @@ const escapeHtml = (s: string | number) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-export function exportToPdf<T>({ title, subtitle, columns, rows, totals, imageAccessor }: PdfExportOptions<T>) {
-  const win = window.open("", "_blank", "width=1024,height=768");
-  if (!win) return;
-
+export async function exportToPdf<T>({ title, subtitle, columns, rows, totals, imageAccessor, qrAccessor }: PdfExportOptions<T>) {
   const now = new Date().toLocaleString("fr-FR");
   const hasImg = !!imageAccessor;
+  const hasQr = !!qrAccessor;
+  const qrMap = await buildQrMap(rows, qrAccessor);
+
+  const win = window.open("", "_blank", "width=1024,height=768");
+  if (!win) return;
 
   const html = `<!doctype html>
 <html lang="fr">
@@ -79,11 +81,12 @@ export function exportToPdf<T>({ title, subtitle, columns, rows, totals, imageAc
   .center { text-align: center; }
   .thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; display: block; }
   .thumb-empty { width: 56px; height: 56px; background: #eee; border-radius: 4px; }
+  .qr { width: 56px; height: 56px; display: block; background: #fff; padding: 2px; border: 1px solid #ddd; border-radius: 4px; }
   .totals { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; }
   .totals div { border: 1px solid #ddd; padding: 8px 12px; border-radius: 6px; font-size: 12px; }
   .totals strong { display: block; font-size: 14px; margin-top: 2px; }
   footer { margin-top: 24px; font-size: 10px; color: #888; text-align: center; }
-  @media print { body { margin: 12mm; } header { border-color: #000; } .thumb { width: 48px; height: 48px; } }
+  @media print { body { margin: 12mm; } header { border-color: #000; } .thumb, .qr { width: 48px; height: 48px; } }
 </style>
 </head>
 <body>
@@ -96,19 +99,26 @@ export function exportToPdf<T>({ title, subtitle, columns, rows, totals, imageAc
     <thead>
       <tr>
         ${hasImg ? `<th style="width:70px">Photo</th>` : ""}
+        ${hasQr ? `<th style="width:70px">QR</th>` : ""}
         ${columns.map((c) => `<th class="${c.align ?? "left"}">${escapeHtml(c.header)}</th>`).join("")}
       </tr>
     </thead>
     <tbody>
       ${rows
-        .map((r) => {
+        .map((r, i) => {
           const imgCell = hasImg
             ? (() => {
                 const src = imageAccessor!(r);
                 return `<td>${src ? `<img class="thumb" src="${escapeHtml(src)}" />` : `<div class="thumb-empty"></div>`}</td>`;
               })()
             : "";
-          return `<tr>${imgCell}${columns
+          const qrCell = hasQr
+            ? (() => {
+                const src = qrMap.get(i);
+                return `<td>${src ? `<img class="qr" src="${src}" />` : `<div class="thumb-empty"></div>`}</td>`;
+              })()
+            : "";
+          return `<tr>${imgCell}${qrCell}${columns
             .map((c) => `<td class="${c.align ?? "left"}">${escapeHtml(c.accessor(r))}</td>`)
             .join("")}</tr>`;
         })
