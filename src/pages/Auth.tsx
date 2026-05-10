@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 
@@ -32,44 +31,18 @@ const Auth = () => {
         </div>
 
         <Card className="p-6 shadow-elegant border-border/60">
-          <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Connexion</TabsTrigger>
-              <TabsTrigger value="signup">Inscription</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="login">
-              <form onSubmit={(e) => handleSubmit(e, "login")} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input id="login-email" type="email" required placeholder="vous@gama.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Mot de passe</Label>
-                  <Input id="login-password" type="password" required />
-                </div>
-                <Button type="submit" variant="hero" className="w-full">Se connecter</Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={(e) => handleSubmit(e, "signup")} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nom complet</Label>
-                  <Input id="signup-name" required placeholder="Aïcha Diallo" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input id="signup-email" type="email" required placeholder="vous@gama.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Mot de passe</Label>
-                  <Input id="signup-password" type="password" required minLength={6} />
-                </div>
-                <Button type="submit" variant="hero" className="w-full">Créer mon compte</Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+          <h2 className="text-lg font-semibold mb-6 text-center">Connexion</h2>
+          <form onSubmit={(e) => handleSubmit(e, "login")} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="login-email">Email</Label>
+              <Input id="login-email" type="email" required placeholder="vous@gama.com" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-password">Mot de passe</Label>
+              <Input id="login-password" type="password" required />
+            </div>
+            <Button type="submit" variant="hero" className="w-full">Se connecter</Button>
+          </form>
         </Card>
 
         <p className="text-xs text-muted-foreground text-center mt-6">

@@ -2,6 +2,7 @@
 // Les deux fonctions partagent la même définition de colonnes pour rester DRY.
 
 import ExcelJS from "exceljs";
+import QRCode from "qrcode";
 
 export interface PdfColumn<T> {
   header: string;
@@ -17,6 +18,31 @@ export interface PdfExportOptions<T> {
   totals?: { label: string; value: string }[];
   /** Optionnel: récupère l'URL de l'image associée à la ligne (article photo) */
   imageAccessor?: (row: T) => string | null | undefined;
+  /** Optionnel: contenu encodé dans un QR code par ligne (ex: code|nom) */
+  qrAccessor?: (row: T) => string | null | undefined;
+}
+
+async function qrToDataUrl(value: string): Promise<string | null> {
+  try {
+    return await QRCode.toDataURL(value, { margin: 1, width: 160 });
+  } catch {
+    return null;
+  }
+}
+
+/** Pré-calcule les data URLs des QR pour éviter les async en plein rendu PDF. */
+async function buildQrMap<T>(rows: T[], qrAccessor?: (row: T) => string | null | undefined) {
+  const map = new Map<number, string>();
+  if (!qrAccessor) return map;
+  await Promise.all(
+    rows.map(async (r, i) => {
+      const v = qrAccessor(r);
+      if (!v) return;
+      const url = await qrToDataUrl(v);
+      if (url) map.set(i, url);
+    })
+  );
+  return map;
 }
 
 const escapeHtml = (s: string | number) =>
@@ -26,12 +52,14 @@ const escapeHtml = (s: string | number) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-export function exportToPdf<T>({ title, subtitle, columns, rows, totals, imageAccessor }: PdfExportOptions<T>) {
-  const win = window.open("", "_blank", "width=1024,height=768");
-  if (!win) return;
-
+export async function exportToPdf<T>({ title, subtitle, columns, rows, totals, imageAccessor, qrAccessor }: PdfExportOptions<T>) {
   const now = new Date().toLocaleString("fr-FR");
   const hasImg = !!imageAccessor;
+  const hasQr = !!qrAccessor;
+  const qrMap = await buildQrMap(rows, qrAccessor);
+
+  const win = window.open("", "_blank", "width=1024,height=768");
+  if (!win) return;
 
   const html = `<!doctype html>
 <html lang="fr">
@@ -53,11 +81,12 @@ export function exportToPdf<T>({ title, subtitle, columns, rows, totals, imageAc
   .center { text-align: center; }
   .thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; display: block; }
   .thumb-empty { width: 56px; height: 56px; background: #eee; border-radius: 4px; }
+  .qr { width: 56px; height: 56px; display: block; background: #fff; padding: 2px; border: 1px solid #ddd; border-radius: 4px; }
   .totals { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; }
   .totals div { border: 1px solid #ddd; padding: 8px 12px; border-radius: 6px; font-size: 12px; }
   .totals strong { display: block; font-size: 14px; margin-top: 2px; }
   footer { margin-top: 24px; font-size: 10px; color: #888; text-align: center; }
-  @media print { body { margin: 12mm; } header { border-color: #000; } .thumb { width: 48px; height: 48px; } }
+  @media print { body { margin: 12mm; } header { border-color: #000; } .thumb, .qr { width: 48px; height: 48px; } }
 </style>
 </head>
 <body>
@@ -70,19 +99,26 @@ export function exportToPdf<T>({ title, subtitle, columns, rows, totals, imageAc
     <thead>
       <tr>
         ${hasImg ? `<th style="width:70px">Photo</th>` : ""}
+        ${hasQr ? `<th style="width:70px">QR</th>` : ""}
         ${columns.map((c) => `<th class="${c.align ?? "left"}">${escapeHtml(c.header)}</th>`).join("")}
       </tr>
     </thead>
     <tbody>
       ${rows
-        .map((r) => {
+        .map((r, i) => {
           const imgCell = hasImg
             ? (() => {
                 const src = imageAccessor!(r);
                 return `<td>${src ? `<img class="thumb" src="${escapeHtml(src)}" />` : `<div class="thumb-empty"></div>`}</td>`;
               })()
             : "";
-          return `<tr>${imgCell}${columns
+          const qrCell = hasQr
+            ? (() => {
+                const src = qrMap.get(i);
+                return `<td>${src ? `<img class="qr" src="${src}" />` : `<div class="thumb-empty"></div>`}</td>`;
+              })()
+            : "";
+          return `<tr>${imgCell}${qrCell}${columns
             .map((c) => `<td class="${c.align ?? "left"}">${escapeHtml(c.accessor(r))}</td>`)
             .join("")}</tr>`;
         })
@@ -133,14 +169,20 @@ async function fetchImageAsBuffer(url: string): Promise<{ buffer: ArrayBuffer; e
   }
 }
 
-export async function exportToExcel<T>({ title, subtitle, columns, rows, totals, imageAccessor }: PdfExportOptions<T>) {
+export async function exportToExcel<T>({ title, subtitle, columns, rows, totals, imageAccessor, qrAccessor }: PdfExportOptions<T>) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "GAMA Boutique";
   workbook.created = new Date();
   const sheet = workbook.addWorksheet(title.slice(0, 31) || "Export");
 
   const hasImg = !!imageAccessor;
-  const headers = [...(hasImg ? ["Photo"] : []), ...columns.map((c) => c.header)];
+  const hasQr = !!qrAccessor;
+  const extraCols = (hasImg ? 1 : 0) + (hasQr ? 1 : 0);
+  const headers = [
+    ...(hasImg ? ["Photo"] : []),
+    ...(hasQr ? ["QR"] : []),
+    ...columns.map((c) => c.header),
+  ];
 
   // Title row
   sheet.mergeCells(1, 1, 1, headers.length);
@@ -170,8 +212,9 @@ export async function exportToExcel<T>({ title, subtitle, columns, rows, totals,
 
   // Column widths
   if (hasImg) sheet.getColumn(1).width = 12;
+  if (hasQr) sheet.getColumn(hasImg ? 2 : 1).width = 12;
   columns.forEach((c, i) => {
-    sheet.getColumn(i + 1 + (hasImg ? 1 : 0)).width = Math.max(12, c.header.length + 4);
+    sheet.getColumn(i + 1 + extraCols).width = Math.max(12, c.header.length + 4);
   });
 
   // Data rows
@@ -179,11 +222,9 @@ export async function exportToExcel<T>({ title, subtitle, columns, rows, totals,
     const row = rows[r];
     const excelRowIdx = headerRowIdx + 1 + r;
     const excelRow = sheet.getRow(excelRowIdx);
-    excelRow.height = hasImg ? 60 : 18;
+    excelRow.height = (hasImg || hasQr) ? 60 : 18;
 
-    let colOffset = 0;
     if (hasImg) {
-      colOffset = 1;
       const url = imageAccessor!(row);
       if (url) {
         const img = await fetchImageAsBuffer(url);
@@ -197,8 +238,29 @@ export async function exportToExcel<T>({ title, subtitle, columns, rows, totals,
       }
     }
 
+    if (hasQr) {
+      const v = qrAccessor!(row);
+      if (v) {
+        const dataUrl = await qrToDataUrl(v);
+        if (dataUrl) {
+          const m = dataUrl.match(/^data:image\/(png|jpeg|gif);base64,(.+)$/);
+          if (m) {
+            const bin = atob(m[2]);
+            const buf = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            const imageId = workbook.addImage({ buffer: buf.buffer as any, extension: m[1] as any });
+            const qrColIdx = hasImg ? 1 : 0;
+            sheet.addImage(imageId, {
+              tl: { col: qrColIdx + 0.1, row: excelRowIdx - 1 + 0.1 },
+              ext: { width: 70, height: 70 },
+            });
+          }
+        }
+      }
+    }
+
     columns.forEach((c, i) => {
-      const cell = excelRow.getCell(i + 1 + colOffset);
+      const cell = excelRow.getCell(i + 1 + extraCols);
       const v = c.accessor(row);
       cell.value = v as any;
       cell.alignment = { vertical: "middle", horizontal: c.align ?? "left", wrapText: true };
