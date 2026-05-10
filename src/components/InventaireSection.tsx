@@ -120,6 +120,7 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
               ]}
               rows={filtered}
               imageAccessor={(a: Article) => a.photo}
+              qrAccessor={(a: Article) => `${a.code}|${a.nom}`}
               totals={[
                 { label: "Articles", value: String(filtered.length) },
                 { label: "Qté entrée", value: String(totalEntree) },
