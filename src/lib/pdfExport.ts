@@ -169,14 +169,20 @@ async function fetchImageAsBuffer(url: string): Promise<{ buffer: ArrayBuffer; e
   }
 }
 
-export async function exportToExcel<T>({ title, subtitle, columns, rows, totals, imageAccessor }: PdfExportOptions<T>) {
+export async function exportToExcel<T>({ title, subtitle, columns, rows, totals, imageAccessor, qrAccessor }: PdfExportOptions<T>) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "GAMA Boutique";
   workbook.created = new Date();
   const sheet = workbook.addWorksheet(title.slice(0, 31) || "Export");
 
   const hasImg = !!imageAccessor;
-  const headers = [...(hasImg ? ["Photo"] : []), ...columns.map((c) => c.header)];
+  const hasQr = !!qrAccessor;
+  const extraCols = (hasImg ? 1 : 0) + (hasQr ? 1 : 0);
+  const headers = [
+    ...(hasImg ? ["Photo"] : []),
+    ...(hasQr ? ["QR"] : []),
+    ...columns.map((c) => c.header),
+  ];
 
   // Title row
   sheet.mergeCells(1, 1, 1, headers.length);
@@ -206,8 +212,9 @@ export async function exportToExcel<T>({ title, subtitle, columns, rows, totals,
 
   // Column widths
   if (hasImg) sheet.getColumn(1).width = 12;
+  if (hasQr) sheet.getColumn(hasImg ? 2 : 1).width = 12;
   columns.forEach((c, i) => {
-    sheet.getColumn(i + 1 + (hasImg ? 1 : 0)).width = Math.max(12, c.header.length + 4);
+    sheet.getColumn(i + 1 + extraCols).width = Math.max(12, c.header.length + 4);
   });
 
   // Data rows
@@ -215,11 +222,9 @@ export async function exportToExcel<T>({ title, subtitle, columns, rows, totals,
     const row = rows[r];
     const excelRowIdx = headerRowIdx + 1 + r;
     const excelRow = sheet.getRow(excelRowIdx);
-    excelRow.height = hasImg ? 60 : 18;
+    excelRow.height = (hasImg || hasQr) ? 60 : 18;
 
-    let colOffset = 0;
     if (hasImg) {
-      colOffset = 1;
       const url = imageAccessor!(row);
       if (url) {
         const img = await fetchImageAsBuffer(url);
@@ -233,8 +238,29 @@ export async function exportToExcel<T>({ title, subtitle, columns, rows, totals,
       }
     }
 
+    if (hasQr) {
+      const v = qrAccessor!(row);
+      if (v) {
+        const dataUrl = await qrToDataUrl(v);
+        if (dataUrl) {
+          const m = dataUrl.match(/^data:image\/(png|jpeg|gif);base64,(.+)$/);
+          if (m) {
+            const bin = atob(m[2]);
+            const buf = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            const imageId = workbook.addImage({ buffer: buf.buffer as any, extension: m[1] as any });
+            const qrColIdx = hasImg ? 1 : 0;
+            sheet.addImage(imageId, {
+              tl: { col: qrColIdx + 0.1, row: excelRowIdx - 1 + 0.1 },
+              ext: { width: 70, height: 70 },
+            });
+          }
+        }
+      }
+    }
+
     columns.forEach((c, i) => {
-      const cell = excelRow.getCell(i + 1 + colOffset);
+      const cell = excelRow.getCell(i + 1 + extraCols);
       const v = c.accessor(row);
       cell.value = v as any;
       cell.alignment = { vertical: "middle", horizontal: c.align ?? "left", wrapText: true };
