@@ -1,19 +1,57 @@
 import { Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 
 const Auth = () => {
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>, kind: "login" | "signup") => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast.success(kind === "login" ? "Connexion (maquette)" : "Compte créé (maquette)");
-    navigate("/dashboard");
+
+    try {
+      setLoading(true);
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || "https://backgama-production.up.railway.app"}/gama-boutique/v/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Erreur de connexion");
+      }
+
+      // Sauvegarde token/user
+      localStorage.setItem("token", data.token);
+
+      toast.success("Connexion réussie");
+
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast.error(error.message || "Une erreur est survenue");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -23,57 +61,56 @@ const Auth = () => {
           <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-primary shadow-glow mb-4">
             <Sparkles className="h-7 w-7 text-primary-foreground" />
           </div>
+
           <h1 className="text-3xl font-bold">
             <span className="text-gradient">GAMA</span> Boutique
           </h1>
+
           <p className="text-muted-foreground mt-2 text-sm">
             La gestion mode, simplement.
           </p>
         </div>
 
         <Card className="p-6 shadow-elegant border-border/60">
-          <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Connexion</TabsTrigger>
-              <TabsTrigger value="signup">Inscription</TabsTrigger>
-            </TabsList>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
 
-            <TabsContent value="login">
-              <form onSubmit={(e) => handleSubmit(e, "login")} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input id="login-email" type="email" required placeholder="vous@gama.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Mot de passe</Label>
-                  <Input id="login-password" type="password" required />
-                </div>
-                <Button type="submit" variant="hero" className="w-full">Se connecter</Button>
-              </form>
-            </TabsContent>
+              <Input
+                id="email"
+                type="email"
+                required
+                placeholder="vous@gama.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
 
-            <TabsContent value="signup">
-              <form onSubmit={(e) => handleSubmit(e, "signup")} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Nom complet</Label>
-                  <Input id="signup-name" required placeholder="Aïcha Diallo" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input id="signup-email" type="email" required placeholder="vous@gama.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Mot de passe</Label>
-                  <Input id="signup-password" type="password" required minLength={6} />
-                </div>
-                <Button type="submit" variant="hero" className="w-full">Créer mon compte</Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+            <div className="space-y-2">
+              <Label htmlFor="password">Mot de passe</Label>
+
+              <Input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              variant="hero"
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? "Connexion..." : "Se connecter"}
+            </Button>
+          </form>
         </Card>
 
         <p className="text-xs text-muted-foreground text-center mt-6">
-          Maquette visuelle — aucune authentification réelle pour l'instant.
+          © GAMA Boutique
         </p>
       </div>
     </div>
