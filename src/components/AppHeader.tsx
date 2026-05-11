@@ -1,8 +1,9 @@
-import { LogOut, Sparkles } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { AppUser, Role } from "@/lib/mockData";
+import logo from "@/assets/gama-logo.png";
 
 interface Props {
   user: AppUser;
