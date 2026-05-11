@@ -17,11 +17,8 @@ const AppHeader = ({ user, onSwitchRole }: Props) => {
     <header className="border-b border-border bg-card/50 backdrop-blur-xl sticky top-0 z-40">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-gradient-primary flex items-center justify-center shadow-glow">
-            <Sparkles className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <div>
-            <div className="font-bold text-lg leading-none">GAMA</div>
+          <img src={logo} alt="GAMA Boutique" className="h-10 w-auto" />
+          <div className="hidden sm:block">
             <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Boutique</div>
           </div>
         </Link>
