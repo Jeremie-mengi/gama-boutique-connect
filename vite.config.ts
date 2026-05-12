@@ -8,40 +8,22 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-
-    // 🔥 PROXY CORS (solution DEV)
-    proxy: {
-      "/api": {
-        target:
-          "https://backgama-production.up.railway.app",
-        changeOrigin: true,
-        secure: true,
-        rewrite: (path) =>
-          path.replace(/^\/api/, ""),
-      },
-    },
-
     hmr: {
       overlay: false,
     },
+    proxy: {
+      '/api': {
+        target: 'https://backgama-production.up.railway.app',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/gama-boutique/v1')
+      }
+    }
   },
-
-  plugins: [
-    react(),
-    mode === "development" && componentTagger(),
-  ].filter(Boolean),
-
+  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: [
-      "react",
-      "react-dom",
-      "react/jsx-runtime",
-      "react/jsx-dev-runtime",
-      "@tanstack/react-query",
-      "@tanstack/query-core",
-    ],
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
 }));
