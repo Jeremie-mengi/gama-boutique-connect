@@ -168,6 +168,7 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
               ]}
               rows={filtered}
               imageAccessor={(a: Article) => a.photo}
+              qrAccessor={(a: Article) => `${a.code}|${a.nom}`}
               disabled={filtered.length === 0}
             />
             <ArticleExcelImport

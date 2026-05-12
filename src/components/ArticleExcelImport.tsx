@@ -40,11 +40,14 @@ const ArticleExcelImport = ({ boutiques, lockedBoutiqueId, onImport }: Props) =>
       lockedBoutiqueId
         ? boutiques.find((b) => b.id === lockedBoutiqueId)?.nom ?? ""
         : boutiques[0]?.nom ?? "",
-      "CHM-IMP-1", "Chemise importée", "Chemise lin", "",
+      "CHM-IMP-1", "Chemise importée", "Chemise lin",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600",
       "PRET_A_PORTER", "Blanc", "", "EN_STOCK", "L",
       "Été 2026", "non", 22500, "CDF", 30,
     ];
     const ws = XLSX.utils.aoa_to_sheet([headers, example]);
+    // Note dans la cellule photo
+    ws["E1"].c = [{ a: "GAMA", t: "Colonne photo : URL d'image (https://...) ou data URI (data:image/png;base64,...)" }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Articles");
     XLSX.writeFile(wb, "modele_import_articles.xlsx");
