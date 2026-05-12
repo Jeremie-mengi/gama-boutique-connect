@@ -1,28 +1,57 @@
 import axios from "axios";
 
-// Utilisez le proxy en développement, l'URL réelle en production
-const API_URL = import.meta.env.DEV 
-  ? '/api'  // En développement, utilise le proxy Vite
+import { useAuthStore } from "@/store/authStore";
+
+
+const API_URL = import.meta.env.DEV
+  ? "/api"
   : import.meta.env.VITE_API_URL;
 
 export const api = axios.create({
   baseURL: API_URL,
+
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Interceptor debug
-api.interceptors.request.use((config) => {
-  console.log("API CALL →", config.baseURL + config.url);
-  return config;
-});
+api.interceptors.request.use(
+  (config) => {
+    // Récupération du token Zustand
+    const token =
+      useAuthStore.getState().accessToken;
 
-// Interceptor pour gérer les erreurs
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    console.log(
+      "API CALL →",
+      config.baseURL + config.url
+    );
+
+    return config;
+  },
+
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 api.interceptors.response.use(
   (response) => response,
+
   (error) => {
-    console.error("API ERROR →", error.response?.data || error.message);
+    console.error(
+      "API ERROR →",
+      error.response?.data || error.message
+    );
+    if (error.response?.status === 401) {
+      console.warn(
+        "Session expirée ou non autorisée"
+      );
+    }
+
     return Promise.reject(error);
   }
 );

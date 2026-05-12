@@ -92,14 +92,14 @@ const Dashboard = () => {
     [boutiques, selectedBoutique, isAll],
   );
   const logout = useAuthStore((state) => state.logout);
-const handleSwitchRole = (role: string) => {
-  if (role === "VENDEUR") {
-    navigate("/user-boutique");
-    return;
-  }
+  const handleSwitchRole = (role: string) => {
+    if (role === "VENDEUR") {
+      navigate("/user-boutique");
+      return;
+    }
 
-  navigate("/dashboard");
-};
+    navigate("/dashboard");
+  };
 
   const renderSection = () => {
     switch (section) {
@@ -236,24 +236,17 @@ const handleSwitchRole = (role: string) => {
                 {SECTION_LABELS[section]}
               </div>
             </div>
-<Select
-  value={currentUser?.role}
-  onValueChange={handleSwitchRole}
->
-  <SelectTrigger className="w-[130px] h-9">
-    <SelectValue />
-  </SelectTrigger>
+            <Select value={currentUser?.role} onValueChange={handleSwitchRole}>
+              <SelectTrigger className="w-[130px] h-9">
+                <SelectValue />
+              </SelectTrigger>
 
-  <SelectContent>
-    <SelectItem value="ADMIN">
-      Admin
-    </SelectItem>
+              <SelectContent>
+                <SelectItem value="ADMIN">Admin</SelectItem>
 
-    <SelectItem value="VENDEUR">
-      Vendeur
-    </SelectItem>
-  </SelectContent>
-</Select>
+                <SelectItem value="VENDEUR">Vendeur</SelectItem>
+              </SelectContent>
+            </Select>
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-medium">{currentUser?.nom}</span>
               <span className="text-[10px] uppercase tracking-wider text-primary font-semibold">

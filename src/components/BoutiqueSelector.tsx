@@ -1,14 +1,15 @@
 import { Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Boutique } from "@/lib/mockData";
+import { useBoutiqueStore } from "@/store/boutiqueStore";
 
 interface Props {
-  boutiques: Boutique[];
   value: string; // "all" ou boutique id
   onChange: (v: string) => void;
 }
 
-const BoutiqueSelector = ({ boutiques, value, onChange }: Props) => {
+const BoutiqueSelector = ({ value, onChange }: Props) => {
+  const { boutiques } = useBoutiqueStore();
+
   return (
     <div className="flex items-center gap-3 flex-wrap rounded-xl border border-border/60 bg-card/40 p-3">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">

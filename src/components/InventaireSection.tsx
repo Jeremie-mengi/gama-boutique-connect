@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Package, CalendarRange, Search, X, ImageOff } from "lucide-react";
+import { Package, CalendarRange, Search, X, ImageOff, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,13 +12,31 @@ import ArticleExcelImport from "./ArticleExcelImport";
 import ExportButtons from "./ExportButtons";
 import ImageLightbox from "./ImageLightbox";
 import QrCode from "./QrCode";
-import { type Article, type Boutique, CATEGORIES } from "@/lib/mockData";
+import { useBoutiqueStore } from "@/store/boutiqueStore";
 
-interface Props {
-  boutiques: Boutique[];
-  articles: Article[];
-  setArticles: React.Dispatch<React.SetStateAction<Article[]>>;
+interface Article {
+  id: string;
+  code: string;
+  nom: string;
+  boutique_id: string;
+  couleur: string;
+  taille?: string;
+  categorie: string;
+  prix: number;
+  devise: string;
+  quantiteEntree: number;
+  quantiteRestante: number;
+  quantiteVendue: number;
+  photo?: string;
+  dateEntreeStock: string;
+  promotions: any[];
 }
+
+const CATEGORIES = [
+  { value: "VETEMENT", label: "Vêtement" },
+  { value: "CHAUSSURE", label: "Chaussure" },
+  { value: "ACCESSOIRE", label: "Accessoire" },
+];
 
 const fmt = (n: number) => new Intl.NumberFormat("fr-FR").format(n) + " F";
 const toInputDate = (iso: string) => iso.slice(0, 10);
@@ -33,7 +51,10 @@ const numFilter = (val: number, op: NumOp, ref: string) => {
   return val === r;
 };
 
-const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
+const InventaireSection = () => {
+  const { boutiques, getAllArticles, loading } = useBoutiqueStore();
+  const [articles, setArticles] = useState<Article[]>([]);
+  
   const today = new Date();
   const past = new Date(today.getTime() - 30 * 86400000);
 
@@ -56,6 +77,12 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
   const [vendVal, setVendVal] = useState("");
   const [zoomArticle, setZoomArticle] = useState<Article | null>(null);
 
+  // Load articles from store
+  useEffect(() => {
+    const allArticles = getAllArticles();
+    setArticles(allArticles);
+  }, [boutiques, getAllArticles]);
+
   const filtered = useMemo(() => {
     const fromTs = +new Date(from);
     const toTs = +new Date(to) + 86400000;
@@ -68,8 +95,8 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
       if (couleur && !a.couleur.toLowerCase().includes(couleur.toLowerCase())) return false;
       if (taille && !(a.taille ?? "").toLowerCase().includes(taille.toLowerCase())) return false;
       if (categorie !== "all" && a.categorie !== categorie) return false;
-      if (promo === "yes" && a.promotions.length === 0) return false;
-      if (promo === "no" && a.promotions.length > 0) return false;
+      if (promo === "yes" && (!a.promotions || a.promotions.length === 0)) return false;
+      if (promo === "no" && a.promotions && a.promotions.length > 0) return false;
       if (!numFilter(a.prix, prixOp, prixVal)) return false;
       if (!numFilter(a.quantiteRestante, restOp, restVal)) return false;
       if (!numFilter(a.quantiteVendue, vendOp, vendVal)) return false;
@@ -87,6 +114,14 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
     setCategorie("all"); setPromo("all");
     setPrixOp("all"); setPrixVal(""); setRestOp("all"); setRestVal(""); setVendOp("all"); setVendVal("");
   };
+
+  if (loading && articles.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -129,14 +164,8 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
               ]}
               disabled={filtered.length === 0}
             />
-            <ArticleExcelImport
-              boutiques={boutiques}
-              onImport={(list) => setArticles((prev) => [...list, ...prev])}
-            />
-            <ArticleFormDialog
-              boutiques={boutiques}
-              onCreate={(a) => setArticles((prev) => [a, ...prev])}
-            />
+            <ArticleExcelImport />
+            <ArticleFormDialog />
           </div>
         </div>
 
@@ -345,7 +374,7 @@ const InventaireSection = ({ boutiques, articles, setArticles }: Props) => {
                     </TableCell>
                     <TableCell className="text-right font-semibold">{fmt(a.prix)}</TableCell>
                     <TableCell>
-                      {a.promotions.length > 0 ? (
+                      {a.promotions && a.promotions.length > 0 ? (
                         <Badge className="bg-primary/15 text-primary border-primary/30">
                           -{a.promotions[0].pourcentage}%
                         </Badge>

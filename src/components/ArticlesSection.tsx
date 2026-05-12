@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Package, Search, X, ImageOff, Tag } from "lucide-react";
+import { Package, Search, X, ImageOff, Tag, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,18 +11,48 @@ import ArticleExcelImport from "./ArticleExcelImport";
 import ImageLightbox from "./ImageLightbox";
 import ExportButtons from "./ExportButtons";
 import QrCode from "./QrCode";
-import {
-  type Article, type Boutique, type StatutArticle,
-  CATEGORIES, STATUTS, formatMoney,
-} from "@/lib/mockData";
+import { useBoutiqueStore } from "@/store/boutiqueStore";
+import { toast } from "sonner";
 
-interface Props {
-  boutiques: Boutique[];
-  articles: Article[];
-  setArticles: React.Dispatch<React.SetStateAction<Article[]>>;
+// Types
+interface Article {
+  id: string;
+  code: string;
+  nom: string;
+  boutique_id: string;
+  couleur: string;
+  taille?: string;
+  categorie: string;
+  prix: number;
+  devise: string;
+  quantiteEntree: number;
+  quantiteRestante: number;
+  quantiteVendue: number;
+  statut: string;
+  photo?: string;
+  dateEntreeStock: string;
+  promotions: any[];
 }
 
+type StatutArticle = "EN_STOCK" | "RUPTURE" | "PROMOTION";
 type NumOp = "all" | "gte" | "lte" | "eq";
+
+const CATEGORIES = [
+  { value: "VETEMENT", label: "Vêtement" },
+  { value: "CHAUSSURE", label: "Chaussure" },
+  { value: "ACCESSOIRE", label: "Accessoire" },
+];
+
+const STATUTS = [
+  { value: "EN_STOCK", label: "En stock" },
+  { value: "RUPTURE", label: "Rupture" },
+  { value: "PROMOTION", label: "Promotion" },
+];
+
+const formatMoney = (amount: number, currency: string = "CDF") => {
+  return new Intl.NumberFormat("fr-FR").format(amount) + " " + currency;
+};
+
 const numFilter = (val: number, op: NumOp, ref: string) => {
   if (op === "all" || ref === "") return true;
   const r = Number(ref);
@@ -33,8 +63,9 @@ const numFilter = (val: number, op: NumOp, ref: string) => {
 };
 
 const ArticleCard = ({ a, boutiqueName, onZoom }: { a: Article; boutiqueName: string; onZoom: (a: Article) => void }) => {
-  const promo = a.promotions[0];
+  const promo = a.promotions?.[0];
   const lowStock = a.quantiteRestante <= 6;
+  
   return (
     <div className="group rounded-xl border border-border/60 bg-card overflow-hidden shadow-card hover:shadow-glow hover:border-primary/40 transition-all">
       <button
@@ -92,7 +123,10 @@ const ArticleCard = ({ a, boutiqueName, onZoom }: { a: Article; boutiqueName: st
   );
 };
 
-const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
+const ArticlesSection = () => {
+  const { boutiques, getAllArticles, loading } = useBoutiqueStore();
+  const [articles, setArticles] = useState<Article[]>([]);
+  
   const [boutique, setBoutique] = useState<string>("all");
   const [statut, setStatut] = useState<StatutArticle | "all">("all");
   const [code, setCode] = useState("");
@@ -111,6 +145,12 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
 
   const [zoomArticle, setZoomArticle] = useState<Article | null>(null);
 
+  // Load articles from store
+  useEffect(() => {
+    const allArticles = getAllArticles();
+    setArticles(allArticles);
+  }, [boutiques, getAllArticles]);
+
   const nameOf = (id: string) => boutiques.find((b) => b.id === id)?.nom ?? "—";
 
   const filtered = useMemo(() => {
@@ -122,8 +162,8 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
       if (couleur && !a.couleur.toLowerCase().includes(couleur.toLowerCase())) return false;
       if (taille && !(a.taille ?? "").toLowerCase().includes(taille.toLowerCase())) return false;
       if (categorie !== "all" && a.categorie !== categorie) return false;
-      if (promo === "yes" && a.promotions.length === 0) return false;
-      if (promo === "no" && a.promotions.length > 0) return false;
+      if (promo === "yes" && (!a.promotions || a.promotions.length === 0)) return false;
+      if (promo === "no" && a.promotions && a.promotions.length > 0) return false;
       if (!numFilter(a.prix, prixOp, prixVal)) return false;
       if (!numFilter(a.quantiteRestante, restOp, restVal)) return false;
       if (!numFilter(a.quantiteVendue, vendOp, vendVal)) return false;
@@ -137,6 +177,14 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
     setPrixOp("all"); setPrixVal(""); setRestOp("all"); setRestVal(""); setVendOp("all"); setVendVal("");
   };
 
+  if (loading && articles.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card className="p-6 shadow-card border-border/60">
@@ -147,7 +195,7 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
             </div>
             <div>
               <h2 className="font-bold text-2xl">Tous les articles</h2>
-              <p className="text-sm text-muted-foreground">Recherche multicritères et création d'article</p>
+              <p className="text-sm text-muted-foreground">Recherche multicritères</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -164,21 +212,15 @@ const ArticlesSection = ({ boutiques, articles, setArticles }: Props) => {
                 { header: "Restant", accessor: (a: Article) => a.quantiteRestante, align: "right" },
                 { header: "Vendu", accessor: (a: Article) => a.quantiteVendue, align: "right" },
                 { header: "Prix", accessor: (a: Article) => formatMoney(a.prix, a.devise ?? "CDF"), align: "right" },
-                { header: "Promo", accessor: (a: Article) => a.promotions[0] ? `-${a.promotions[0].pourcentage}%` : "—" },
+                { header: "Promo", accessor: (a: Article) => a.promotions?.[0] ? `-${a.promotions[0].pourcentage}%` : "—" },
               ]}
               rows={filtered}
               imageAccessor={(a: Article) => a.photo}
               qrAccessor={(a: Article) => `${a.code}|${a.nom}`}
               disabled={filtered.length === 0}
             />
-            <ArticleExcelImport
-              boutiques={boutiques}
-              onImport={(list) => setArticles((prev) => [...list, ...prev])}
-            />
-            <ArticleFormDialog
-              boutiques={boutiques}
-              onCreate={(a) => setArticles((prev) => [a, ...prev])}
-            />
+            <ArticleExcelImport />
+            <ArticleFormDialog />
           </div>
         </div>
 
