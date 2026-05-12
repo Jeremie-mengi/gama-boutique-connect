@@ -1,14 +1,22 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
+
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import Splash from "./pages/Splash.tsx";
-import Auth from "./pages/Auth.tsx";
-import Dashboard from "./pages/Dashboard.tsx";
-import UserBoutique from "./pages/UserBoutique.tsx";
-import NotFound from "./pages/NotFound.tsx";
+
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import UserBoutique from "./pages/UserBoutique";
+import NotFound from "./pages/NotFound";
+
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -17,14 +25,37 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/splash" element={<Splash />} />
+
+          {/* Redirection vers auth */}
+          <Route path="/" element={<Navigate to="/auth" replace />} />
+
+          {/* Auth */}
           <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/user-boutique" element={<UserBoutique />} />
+
+          {/* Routes protégées */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/user-boutique"
+            element={
+              <ProtectedRoute>
+                <UserBoutique />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<NotFound />} />
+
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

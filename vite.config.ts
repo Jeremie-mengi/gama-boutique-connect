@@ -11,6 +11,13 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    proxy: {
+      '/api': {
+        target: 'https://backgama-production.up.railway.app',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/gama-boutique/v1')
+      }
+    }
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
