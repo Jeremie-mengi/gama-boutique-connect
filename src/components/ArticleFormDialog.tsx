@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Tag, Trash2 } from "lucide-react";
+import { Plus, Tag, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,8 @@ import {
   type Article, type Boutique, type Categorie, type StatutArticle, type Promotion, type Devise,
   CATEGORIES, STATUTS, DEVISES,
 } from "@/lib/mockData";
+import { createArticleApi, apiArticleToLocal } from "@/lib/articlesApi";
+import { useAuthStore } from "@/store/authStore";
 
 interface Props {
   boutiques: Boutique[];
