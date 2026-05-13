@@ -266,7 +266,10 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
           </div>
 
           <DialogFooter>
-            <Button type="submit" variant="hero">Créer l'article</Button>
+            <Button type="submit" variant="hero" disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {submitting ? "Création..." : "Créer l'article"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
