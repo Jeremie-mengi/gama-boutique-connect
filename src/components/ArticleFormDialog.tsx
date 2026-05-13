@@ -27,6 +27,9 @@ const toInputDate = (iso: string) => iso.slice(0, 10);
 
 const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: Props) => {
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const authUser = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const initialBoutique = lockedBoutiqueId ?? boutiques[0]?.id ?? "";
 
   const [form, setForm] = useState({
