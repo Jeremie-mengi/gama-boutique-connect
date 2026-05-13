@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "@/store/authStore";
 
 // API backend GAMA Boutique
 const API_URL = "https://backgama-production.up.railway.app/gama-boutique/v1";
@@ -10,13 +11,16 @@ export const api = axios.create({
   },
 });
 
-// Interceptor debug
+// Inject Authorization header (user connecté) sur chaque requête
 api.interceptors.request.use((config) => {
-  console.log("API CALL →", config.baseURL + config.url);
+  const token = useAuthStore.getState().accessToken;
+  if (token && config.headers) {
+    config.headers.set?.("Authorization", `Bearer ${token}`);
+  }
+  console.log("API CALL →", (config.baseURL ?? "") + (config.url ?? ""));
   return config;
 });
 
-// Interceptor pour gérer les erreurs
 api.interceptors.response.use(
   (response) => response,
   (error) => {
