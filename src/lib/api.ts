@@ -1,9 +1,7 @@
 import axios from "axios";
 
-// Utilisez le proxy en développement, l'URL réelle en production
-const API_URL = import.meta.env.DEV 
-  ? '/api'  // En développement, utilise le proxy Vite
-  : import.meta.env.VITE_API_URL;
+// API backend GAMA Boutique
+const API_URL = "https://backgama-production.up.railway.app/gama-boutique/v1";
 
 export const api = axios.create({
   baseURL: API_URL,
