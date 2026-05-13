@@ -66,38 +66,51 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
     setPromos((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   const removePromo = (id: string) => setPromos((prev) => prev.filter((p) => p.id !== id));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.boutique_id || !form.code.trim() || !form.nom.trim() || !form.couleur.trim()) {
       toast.error("Boutique, code, nom et couleur sont obligatoires");
       return;
     }
-    const article: Article = {
-      id: crypto.randomUUID(),
-      boutique_id: form.boutique_id,
-      code: form.code.trim(),
-      nom: form.nom.trim(),
-      description: form.description.trim() || null,
-      photo: form.photo.trim() || null,
-      categorie: form.categorie,
-      couleur: form.couleur.trim(),
-      observation: form.observation.trim() || null,
-      statut: form.statut,
-      taille: form.taille.trim() || null,
-      serie: form.serie.trim() || null,
-      demiSerie: form.demiSerie,
-      prix: Number(form.prix) || 0,
-      devise: form.devise,
-      quantiteEntree: Number(form.quantiteEntree) || 0,
-      quantiteVendue: 0,
-      quantiteRestante: Number(form.quantiteEntree) || 0,
-      dateEntreeStock: new Date().toISOString(),
-      promotions: promos,
-    };
-    onCreate(article);
-    toast.success("Article créé");
-    setOpen(false);
-    reset();
+    if (!isAuthenticated || !authUser) {
+      toast.error("Vous devez être connecté pour créer un article");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const apiData = await createArticleApi({
+        boutiqueId: form.boutique_id,
+        code: form.code.trim(),
+        nom: form.nom.trim(),
+        couleur: form.couleur.trim(),
+        categorie: form.categorie,
+        description: form.description.trim() || null,
+        photo: form.photo.trim() || null,
+        observation: form.observation.trim() || null,
+        statut: form.statut,
+        taille: form.taille.trim() || null,
+        serie: form.serie.trim() || null,
+        demiSerie: form.demiSerie,
+      });
+      const article = apiArticleToLocal(apiData, {
+        boutique_id: form.boutique_id,
+        prix: Number(form.prix) || 0,
+        devise: form.devise,
+        quantiteEntree: Number(form.quantiteEntree) || 0,
+        promotions: promos,
+      });
+      onCreate(article);
+      toast.success(`Article créé · ${authUser.nom}`);
+      setOpen(false);
+      reset();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string | string[] } } };
+      const msg = e.response?.data?.message;
+      const text = Array.isArray(msg) ? msg.join(" · ") : msg ?? "Échec de la création";
+      toast.error(text);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const lockedName = lockedBoutiqueId ? boutiques.find((b) => b.id === lockedBoutiqueId)?.nom : null;
