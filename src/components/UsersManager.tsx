@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
-import { Plus, Users, Shield, Upload, FileText, X, Pencil, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Users, Shield, Upload, FileText, X, Pencil, Trash2, Loader2 } from "lucide-react";
+import { fetchAllUsers, updateUserApi, deleteUserApi } from "@/lib/usersApi";
 // (DossierCell upload retiré : l'upload se fait à la création.)
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
