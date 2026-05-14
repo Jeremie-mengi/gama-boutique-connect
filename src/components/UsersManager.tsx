@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
-import { Plus, Users, Shield, Upload, FileText, X, Pencil, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Users, Shield, Upload, FileText, X, Pencil, Trash2, Loader2 } from "lucide-react";
+import { fetchAllUsers, updateUserApi, deleteUserApi } from "@/lib/usersApi";
 // (DossierCell upload retiré : l'upload se fait à la création.)
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,19 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
   const [formSexe, setFormSexe] = useState<Sexe>("M");
   const [formDossier, setFormDossier] = useState<DossierFile | null>(null);
   const dossierInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    fetchAllUsers()
+      .then((list) => { if (mounted) setUsers(list); })
+      .catch((e) => toast.error(e?.response?.data?.message || "Impossible de charger les utilisateurs"))
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openCreate = () => {
     setEditing(null);
@@ -54,7 +68,7 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
     e.target.value = "";
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const full_name = String(fd.get("full_name") ?? "").trim();
@@ -66,22 +80,41 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
     }
     const boutique_id = formBoutique === "none" ? null : formBoutique;
     if (editing) {
-      setUsers((prev) => prev.map((u) => u.id === editing.id ? { ...u, full_name, email, telephone, sexe: formSexe, role: formRole, boutique_id, dossier: formDossier } : u));
-      toast.success("Utilisateur modifié");
+      setSubmitting(true);
+      try {
+        const updated = await updateUserApi(editing.id, {
+          nom: full_name, email, telephone, sexe: formSexe, role: formRole,
+        });
+        setUsers((prev) => prev.map((u) => u.id === editing.id
+          ? { ...u, ...updated, boutique_id, dossier: formDossier }
+          : u));
+        toast.success("Utilisateur modifié");
+        setOpen(false);
+      } catch (err: any) {
+        toast.error(err?.response?.data?.message || "Échec de la modification");
+      } finally {
+        setSubmitting(false);
+      }
     } else {
       setUsers((prev) => [{ id: crypto.randomUUID(), full_name, email, telephone, sexe: formSexe, role: formRole, boutique_id, dossier: formDossier }, ...prev]);
-      toast.success("Utilisateur créé");
+      toast.success("Utilisateur créé (local)");
+      setOpen(false);
     }
-    setOpen(false);
   };
 
   const fmtSize = (b: number) => b < 1024 ? `${b} o` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} Ko` : `${(b / 1024 / 1024).toFixed(1)} Mo`;
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!toDelete) return;
-    setUsers((prev) => prev.filter((u) => u.id !== toDelete.id));
-    toast.success(`${toDelete.full_name} supprimé`);
+    const target = toDelete;
     setToDelete(null);
+    try {
+      await deleteUserApi(target.id);
+      setUsers((prev) => prev.filter((u) => u.id !== target.id));
+      toast.success(`${target.full_name} supprimé`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Échec de la suppression");
+    }
   };
 
   const updateUser = (id: string, patch: Partial<AppUser>) => {
@@ -101,7 +134,7 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
           <div>
             <h2 className="font-bold text-xl">Utilisateurs</h2>
             <p className="text-sm text-muted-foreground">
-              {users.length} membre{users.length > 1 ? "s" : ""} · liés à une boutique
+              {loading ? "Chargement…" : `${users.length} membre${users.length > 1 ? "s" : ""} · liés à une boutique`}
             </p>
           </div>
         </div>
@@ -184,7 +217,10 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
                 )}
               </div>
               <DialogFooter>
-                <Button type="submit" variant="hero">{editing ? "Enregistrer" : "Créer"}</Button>
+                <Button type="submit" variant="hero" disabled={submitting}>
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {editing ? "Enregistrer" : "Créer"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
