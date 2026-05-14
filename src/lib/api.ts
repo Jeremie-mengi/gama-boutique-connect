@@ -1,7 +1,5 @@
 import axios from "axios";
-
 import { useAuthStore } from "@/store/authStore";
-
 
 const API_URL = import.meta.env.DEV
   ? "/api"
@@ -17,9 +15,7 @@ export const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    // Récupération du token Zustand
-    const token =
-      useAuthStore.getState().accessToken;
+    const token = useAuthStore.getState().accessToken;
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -46,6 +42,7 @@ api.interceptors.response.use(
       "API ERROR →",
       error.response?.data || error.message
     );
+
     if (error.response?.status === 401) {
       console.warn(
         "Session expirée ou non autorisée"
