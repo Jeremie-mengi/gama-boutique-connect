@@ -29,6 +29,19 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
   const [formSexe, setFormSexe] = useState<Sexe>("M");
   const [formDossier, setFormDossier] = useState<DossierFile | null>(null);
   const dossierInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    fetchAllUsers()
+      .then((list) => { if (mounted) setUsers(list); })
+      .catch((e) => toast.error(e?.response?.data?.message || "Impossible de charger les utilisateurs"))
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openCreate = () => {
     setEditing(null);
