@@ -134,7 +134,7 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
           <div>
             <h2 className="font-bold text-xl">Utilisateurs</h2>
             <p className="text-sm text-muted-foreground">
-              {users.length} membre{users.length > 1 ? "s" : ""} · liés à une boutique
+              {loading ? "Chargement…" : `${users.length} membre${users.length > 1 ? "s" : ""} · liés à une boutique`}
             </p>
           </div>
         </div>
