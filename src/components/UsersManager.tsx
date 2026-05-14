@@ -217,7 +217,10 @@ const UsersManager = ({ users, setUsers, boutiques }: Props) => {
                 )}
               </div>
               <DialogFooter>
-                <Button type="submit" variant="hero">{editing ? "Enregistrer" : "Créer"}</Button>
+                <Button type="submit" variant="hero" disabled={submitting}>
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {editing ? "Enregistrer" : "Créer"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
