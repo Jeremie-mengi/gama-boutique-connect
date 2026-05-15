@@ -79,8 +79,9 @@ interface ApiUser {
   boutique: Boutique[];
 }
 
+// Props modifiées : plus besoin de boutiques en props
 interface Props {
-  boutiques: Boutique[];
+  // boutiques: Boutique[]; // Supprimé car on les récupère via l'API
 }
 
 const ROLES = [
@@ -107,61 +108,61 @@ const SEXES = [
   },
 ];
 
-const UsersManager = ({
-  boutiques,
-}: Props) => {
-  const [users, setUsers] = useState<ApiUser[]>(
-    []
-  );
-
-  const [loading, setLoading] =
-    useState(false);
+const UsersManager = ({}: Props) => {
+  const [users, setUsers] = useState<ApiUser[]>([]);
+  const [boutiques, setBoutiques] = useState<Boutique[]>([]); // Nouvel état pour les boutiques
+  const [loading, setLoading] = useState(false);
+  const [loadingBoutiques, setLoadingBoutiques] = useState(false); // État de chargement des boutiques
 
   const [open, setOpen] = useState(false);
 
-  const [editing, setEditing] =
-    useState<ApiUser | null>(null);
+  const [editing, setEditing] = useState<ApiUser | null>(null);
 
-  const [toDelete, setToDelete] =
-    useState<ApiUser | null>(null);
+  const [toDelete, setToDelete] = useState<ApiUser | null>(null);
 
-  const [formRole, setFormRole] =
-    useState("VENDEUR");
+  const [formRole, setFormRole] = useState("VENDEUR");
 
-  const [formBoutique, setFormBoutique] =
-    useState<string>("none");
+  const [formBoutique, setFormBoutique] = useState<string>("none");
 
-  const [formSexe, setFormSexe] =
-    useState("Masculin");
+  const [formSexe, setFormSexe] = useState("Masculin");
 
-  const [formDossier, setFormDossier] =
-    useState<File | null>(null);
+  const [formDossier, setFormDossier] = useState<File | null>(null);
 
-  const dossierInputRef =
-    useRef<HTMLInputElement>(null);
+  const dossierInputRef = useRef<HTMLInputElement>(null);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
 
-      const response = await api.get(
-        "/user/all"
-      );
+      const response = await api.get("/user/all");
 
       setUsers(response.data.data);
     } catch (error) {
       console.error(error);
 
-      toast.error(
-        "Erreur lors du chargement des utilisateurs"
-      );
+      toast.error("Erreur lors du chargement des utilisateurs");
     } finally {
       setLoading(false);
     }
   };
 
+  // Nouvelle fonction pour récupérer les boutiques
+  const fetchBoutiques = async () => {
+    try {
+      setLoadingBoutiques(true);
+      const response = await api.get("/boutiques/all");
+      setBoutiques(response.data.data || response.data);
+    } catch (error) {
+      console.error(error);
+      toast.error("Erreur lors du chargement des boutiques");
+    } finally {
+      setLoadingBoutiques(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchBoutiques(); // Charger les boutiques au montage du composant
   }, []);
 
   const openCreate = () => {
@@ -183,18 +184,14 @@ const UsersManager = ({
 
     setFormRole(u.role);
 
-    setFormBoutique(
-      u.boutique?.[0]?.id ?? "none"
-    );
+    setFormBoutique(u.boutique?.[0]?.id ?? "none");
 
     setFormSexe(u.sexe);
 
     setOpen(true);
   };
 
-  const onPickDossier = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const onPickDossier = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
 
     if (!file) return;
@@ -204,32 +201,20 @@ const UsersManager = ({
     e.target.value = "";
   };
 
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
-      const fd = new FormData(
-        e.currentTarget
-      );
+      const fd = new FormData(e.currentTarget);
 
-      const nom = String(
-        fd.get("nom") ?? ""
-      ).trim();
+      const nom = String(fd.get("nom") ?? "").trim();
 
-      const email = String(
-        fd.get("email") ?? ""
-      ).trim();
+      const email = String(fd.get("email") ?? "").trim();
 
-      const telephone = String(
-        fd.get("telephone") ?? ""
-      ).trim();
+      const telephone = String(fd.get("telephone") ?? "").trim();
 
       if (!nom || !email) {
-        toast.error(
-          "Nom et email requis"
-        );
+        toast.error("Nom et email requis");
 
         return;
       }
@@ -240,30 +225,17 @@ const UsersManager = ({
         telephone,
         sexe: formSexe,
         role: formRole,
-        boutiqueId:
-          formBoutique === "none"
-            ? null
-            : formBoutique,
+        boutiqueId: formBoutique === "none" ? null : formBoutique,
       };
 
       if (editing) {
-await api.patch(
-  `/user/${editing.id}`,
-  payload
-);
+        await api.patch(`/user/${editing.id}`, payload);
 
-        toast.success(
-          "Utilisateur modifié"
-        );
+        toast.success("Utilisateur modifié");
       } else {
-        await api.post(
-          "/user/create",
-          payload
-        );
+        await api.post("/user/create", payload);
 
-        toast.success(
-          "Utilisateur créé"
-        );
+        toast.success("Utilisateur créé");
       }
 
       setOpen(false);
@@ -272,9 +244,7 @@ await api.patch(
     } catch (error) {
       console.error(error);
 
-      toast.error(
-        "Une erreur est survenue"
-      );
+      toast.error("Une erreur est survenue");
     }
   };
 
@@ -282,13 +252,9 @@ await api.patch(
     if (!toDelete) return;
 
     try {
-await api.delete(
-  `/user/${toDelete.id}`
-);
+      await api.delete(`/user/${toDelete.id}`);
 
-      toast.success(
-        "Utilisateur supprimé"
-      );
+      toast.success("Utilisateur supprimé");
 
       setToDelete(null);
 
@@ -296,9 +262,7 @@ await api.delete(
     } catch (error) {
       console.error(error);
 
-      toast.error(
-        "Erreur lors de la suppression"
-      );
+      toast.error("Erreur lors de la suppression");
     }
   };
 
@@ -311,91 +275,62 @@ await api.delete(
           </div>
 
           <div>
-            <h2 className="font-bold text-xl">
-              Utilisateurs
-            </h2>
+            <h2 className="font-bold text-xl">Utilisateurs</h2>
 
             <p className="text-sm text-muted-foreground">
-              {users.length} membre
-              {users.length > 1
-                ? "s"
-                : ""}
+              {users.length} membre{users.length > 1 ? "s" : ""}
             </p>
           </div>
         </div>
 
-        <Button
-          variant="hero"
-          onClick={openCreate}
-        >
+        <Button variant="hero" onClick={openCreate}>
           <Plus className="h-4 w-4" />
           Nouvel utilisateur
         </Button>
 
-        <Dialog
-          open={open}
-          onOpenChange={setOpen}
-        >
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editing
-                  ? "Modifier l'utilisateur"
-                  : "Nouvel utilisateur"}
+                {editing ? "Modifier l'utilisateur" : "Nouvel utilisateur"}
               </DialogTitle>
             </DialogHeader>
 
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-4"
-            >
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="nom">
-                  Nom complet *
-                </Label>
+                <Label htmlFor="nom">Nom complet *</Label>
 
                 <Input
                   id="nom"
                   name="nom"
                   required
-                  defaultValue={
-                    editing?.nom ?? ""
-                  }
+                  defaultValue={editing?.nom ?? ""}
                   placeholder="Jeremie Mengi"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">
-                  Email *
-                </Label>
+                <Label htmlFor="email">Email *</Label>
 
                 <Input
                   id="email"
                   name="email"
                   type="email"
                   required
-                  defaultValue={
-                    editing?.email ?? ""
-                  }
+                  defaultValue={editing?.email ?? ""}
                   placeholder="jm@gmail.com"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="telephone">
-                    Téléphone
-                  </Label>
+                  <Label htmlFor="telephone">Téléphone</Label>
 
                   <Input
                     id="telephone"
                     name="telephone"
                     type="tel"
-                    defaultValue={
-                      editing?.telephone ??
-                      ""
-                    }
+                    defaultValue={editing?.telephone ?? ""}
                     placeholder="099999999"
                   />
                 </div>
@@ -403,22 +338,14 @@ await api.delete(
                 <div className="space-y-2">
                   <Label>Sexe</Label>
 
-                  <Select
-                    value={formSexe}
-                    onValueChange={
-                      setFormSexe
-                    }
-                  >
+                  <Select value={formSexe} onValueChange={setFormSexe}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
 
                     <SelectContent>
                       {SEXES.map((s) => (
-                        <SelectItem
-                          key={s.value}
-                          value={s.value}
-                        >
+                        <SelectItem key={s.value} value={s.value}>
                           {s.label}
                         </SelectItem>
                       ))}
@@ -430,22 +357,14 @@ await api.delete(
               <div className="space-y-2">
                 <Label>Rôle</Label>
 
-                <Select
-                  value={formRole}
-                  onValueChange={
-                    setFormRole
-                  }
-                >
+                <Select value={formRole} onValueChange={setFormRole}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
 
                   <SelectContent>
                     {ROLES.map((r) => (
-                      <SelectItem
-                        key={r.value}
-                        value={r.value}
-                      >
+                      <SelectItem key={r.value} value={r.value}>
                         {r.label}
                       </SelectItem>
                     ))}
@@ -456,37 +375,31 @@ await api.delete(
               <div className="space-y-2">
                 <Label>Boutique</Label>
 
-                <Select
-                  value={formBoutique}
-                  onValueChange={
-                    setFormBoutique
-                  }
-                >
+                <Select value={formBoutique} onValueChange={setFormBoutique}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="none">
-                      Aucune
-                    </SelectItem>
+                    <SelectItem value="none">Aucune</SelectItem>
 
-                    {boutiques.map((b) => (
-                      <SelectItem
-                        key={b.id}
-                        value={b.id}
-                      >
-                        {b.nom}
+                    {loadingBoutiques ? (
+                      <SelectItem value="loading" disabled>
+                        Chargement...
                       </SelectItem>
-                    ))}
+                    ) : (
+                      boutiques.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.nom}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label>
-                  Dossier de l'agent
-                </Label>
+                <Label>Dossier de l'agent</Label>
 
                 <input
                   ref={dossierInputRef}
@@ -501,17 +414,11 @@ await api.delete(
 
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-medium truncate">
-                        {
-                          formDossier.name
-                        }
+                        {formDossier.name}
                       </div>
 
                       <div className="text-[10px] text-muted-foreground">
-                        {(
-                          formDossier.size /
-                          1024
-                        ).toFixed(1)}{" "}
-                        Ko
+                        {(formDossier.size / 1024).toFixed(1)} Ko
                       </div>
                     </div>
 
@@ -520,11 +427,7 @@ await api.delete(
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() =>
-                        setFormDossier(
-                          null
-                        )
-                      }
+                      onClick={() => setFormDossier(null)}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -534,9 +437,7 @@ await api.delete(
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      dossierInputRef.current?.click()
-                    }
+                    onClick={() => dossierInputRef.current?.click()}
                   >
                     <Upload className="h-3.5 w-3.5" />
                     Uploader un fichier
@@ -545,41 +446,26 @@ await api.delete(
               </div>
 
               <DialogFooter>
-                <Button
-                  type="submit"
-                  variant="hero"
-                >
-                  {editing
-                    ? "Enregistrer"
-                    : "Créer"}
+                <Button type="submit" variant="hero">
+                  {editing ? "Enregistrer" : "Créer"}
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
 
-        <AlertDialog
-          open={!!toDelete}
-          onOpenChange={(o) =>
-            !o && setToDelete(null)
-          }
-        >
+        <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>
-                Supprimer cet utilisateur ?
-              </AlertDialogTitle>
+              <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
 
               <AlertDialogDescription>
-                {toDelete?.nom} sera
-                supprimé définitivement.
+                {toDelete?.nom} sera supprimé définitivement.
               </AlertDialogDescription>
             </AlertDialogHeader>
 
             <AlertDialogFooter>
-              <AlertDialogCancel>
-                Annuler
-              </AlertDialogCancel>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
 
               <AlertDialogAction
                 onClick={handleDelete}
@@ -605,85 +491,48 @@ await api.delete(
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>
-                  Nom
-                </TableHead>
+                <TableHead>Nom</TableHead>
 
-                <TableHead>
-                  Email
-                </TableHead>
+                <TableHead>Email</TableHead>
 
-                <TableHead>
-                  Téléphone
-                </TableHead>
+                <TableHead>Téléphone</TableHead>
 
-                <TableHead>
-                  Sexe
-                </TableHead>
+                <TableHead>Sexe</TableHead>
 
-                <TableHead>
-                  Rôle
-                </TableHead>
+                <TableHead>Rôle</TableHead>
 
-                <TableHead>
-                  Boutique
-                </TableHead>
+                <TableHead>Boutique</TableHead>
 
-                <TableHead>
-                  Dossier
-                </TableHead>
+                <TableHead>Dossier</TableHead>
 
-                <TableHead className="text-right">
-                  Actions
-                </TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
               {users.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell className="font-medium">
-                    {u.nom}
-                  </TableCell>
+                  <TableCell className="font-medium">{u.nom}</TableCell>
 
-                  <TableCell>
-                    {u.email}
-                  </TableCell>
+                  <TableCell>{u.email}</TableCell>
 
-                  <TableCell>
-                    {u.telephone ||
-                      "—"}
-                  </TableCell>
+                  <TableCell>{u.telephone || "—"}</TableCell>
 
-                  <TableCell>
-                    {u.sexe}
-                  </TableCell>
+                  <TableCell>{u.sexe}</TableCell>
 
                   <TableCell>
                     <Badge
-                      variant={
-                        u.role ===
-                        "ADMIN"
-                          ? "default"
-                          : "secondary"
-                      }
+                      variant={u.role === "ADMIN" ? "default" : "secondary"}
                       className="gap-1"
                     >
-                      {u.role ===
-                        "ADMIN" && (
-                        <Shield className="h-3 w-3" />
-                      )}
+                      {u.role === "ADMIN" && <Shield className="h-3 w-3" />}
 
                       {u.role}
                     </Badge>
                   </TableCell>
 
                   <TableCell>
-                    {u.boutique
-                      ?.length > 0
-                      ? u.boutique[0]
-                          .nom
-                      : "Aucune"}
+                    {u.boutique?.length > 0 ? u.boutique[0].nom : "Aucune"}
                   </TableCell>
 
                   <TableCell>
@@ -691,9 +540,7 @@ await api.delete(
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-primary" />
 
-                        <span>
-                          Dossier
-                        </span>
+                        <span>Dossier</span>
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">
@@ -708,9 +555,7 @@ await api.delete(
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() =>
-                          openEdit(u)
-                        }
+                        onClick={() => openEdit(u)}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -719,11 +564,7 @@ await api.delete(
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() =>
-                          setToDelete(
-                            u
-                          )
-                        }
+                        onClick={() => setToDelete(u)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
