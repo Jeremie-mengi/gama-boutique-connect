@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Tag, Trash2 } from "lucide-react";
+import { Plus, Tag, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,8 @@ import {
   type Article, type Boutique, type Categorie, type StatutArticle, type Promotion, type Devise,
   CATEGORIES, STATUTS, DEVISES,
 } from "@/lib/mockData";
+import { createArticleApi, apiArticleToLocal } from "@/lib/articlesApi";
+import { useAuthStore } from "@/store/authStore";
 
 interface Props {
   boutiques: Boutique[];
@@ -25,6 +27,9 @@ const toInputDate = (iso: string) => iso.slice(0, 10);
 
 const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: Props) => {
   const [open, setOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const authUser = useAuthStore((s) => s.user);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const initialBoutique = lockedBoutiqueId ?? boutiques[0]?.id ?? "";
 
   const [form, setForm] = useState({
@@ -61,38 +66,51 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
     setPromos((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
   const removePromo = (id: string) => setPromos((prev) => prev.filter((p) => p.id !== id));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.boutique_id || !form.code.trim() || !form.nom.trim() || !form.couleur.trim()) {
       toast.error("Boutique, code, nom et couleur sont obligatoires");
       return;
     }
-    const article: Article = {
-      id: crypto.randomUUID(),
-      boutique_id: form.boutique_id,
-      code: form.code.trim(),
-      nom: form.nom.trim(),
-      description: form.description.trim() || null,
-      photo: form.photo.trim() || null,
-      categorie: form.categorie,
-      couleur: form.couleur.trim(),
-      observation: form.observation.trim() || null,
-      statut: form.statut,
-      taille: form.taille.trim() || null,
-      serie: form.serie.trim() || null,
-      demiSerie: form.demiSerie,
-      prix: Number(form.prix) || 0,
-      devise: form.devise,
-      quantiteEntree: Number(form.quantiteEntree) || 0,
-      quantiteVendue: 0,
-      quantiteRestante: Number(form.quantiteEntree) || 0,
-      dateEntreeStock: new Date().toISOString(),
-      promotions: promos,
-    };
-    onCreate(article);
-    toast.success("Article créé");
-    setOpen(false);
-    reset();
+    if (!isAuthenticated || !authUser) {
+      toast.error("Vous devez être connecté pour créer un article");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const apiData = await createArticleApi({
+        boutiqueId: form.boutique_id,
+        code: form.code.trim(),
+        nom: form.nom.trim(),
+        couleur: form.couleur.trim(),
+        categorie: form.categorie,
+        description: form.description.trim() || null,
+        photo: form.photo.trim() || null,
+        observation: form.observation.trim() || null,
+        statut: form.statut,
+        taille: form.taille.trim() || null,
+        serie: form.serie.trim() || null,
+        demiSerie: form.demiSerie,
+      });
+      const article = apiArticleToLocal(apiData, {
+        boutique_id: form.boutique_id,
+        prix: Number(form.prix) || 0,
+        devise: form.devise,
+        quantiteEntree: Number(form.quantiteEntree) || 0,
+        promotions: promos,
+      });
+      onCreate(article);
+      toast.success(`Article créé · ${authUser.nom}`);
+      setOpen(false);
+      reset();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string | string[] } } };
+      const msg = e.response?.data?.message;
+      const text = Array.isArray(msg) ? msg.join(" · ") : msg ?? "Échec de la création";
+      toast.error(text);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const lockedName = lockedBoutiqueId ? boutiques.find((b) => b.id === lockedBoutiqueId)?.nom : null;
@@ -248,7 +266,10 @@ const ArticleFormDialog = ({ boutiques, lockedBoutiqueId, trigger, onCreate }: P
           </div>
 
           <DialogFooter>
-            <Button type="submit" variant="hero">Créer l'article</Button>
+            <Button type="submit" variant="hero" disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {submitting ? "Création..." : "Créer l'article"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

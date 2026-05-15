@@ -13,6 +13,9 @@ import {
 
 import { api } from "@/lib/api";
 
+import { Plus, Users, Shield, Upload, FileText, X, Pencil, Trash2, Loader2 } from "lucide-react";
+import { fetchAllUsers, updateUserApi, deleteUserApi } from "@/lib/usersApi";
+// (DossierCell upload retiré : l'upload se fait à la création.)
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,6 +132,19 @@ const UsersManager = ({}: Props) => {
   const [formDossier, setFormDossier] = useState<File | null>(null);
 
   const dossierInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    fetchAllUsers()
+      .then((list) => { if (mounted) setUsers(list); })
+      .catch((e) => toast.error(e?.response?.data?.message || "Impossible de charger les utilisateurs"))
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchUsers = async () => {
     try {
@@ -250,6 +266,52 @@ const UsersManager = ({}: Props) => {
 
   const handleDelete = async () => {
     if (!toDelete) return;
+    const fd = new FormData(e.currentTarget);
+    const full_name = String(fd.get("full_name") ?? "").trim();
+    const email = String(fd.get("email") ?? "").trim();
+    const telephone = String(fd.get("telephone") ?? "").trim() || null;
+    if (!full_name || !email) {
+      toast.error("Nom et email requis");
+      return;
+    }
+    const boutique_id = formBoutique === "none" ? null : formBoutique;
+    if (editing) {
+      setSubmitting(true);
+      try {
+        const updated = await updateUserApi(editing.id, {
+          nom: full_name, email, telephone, sexe: formSexe, role: formRole,
+        });
+        setUsers((prev) => prev.map((u) => u.id === editing.id
+          ? { ...u, ...updated, boutique_id, dossier: formDossier }
+          : u));
+        toast.success("Utilisateur modifié");
+        setOpen(false);
+      } catch (err: any) {
+        toast.error(err?.response?.data?.message || "Échec de la modification");
+      } finally {
+        setSubmitting(false);
+      }
+    } else {
+      setUsers((prev) => [{ id: crypto.randomUUID(), full_name, email, telephone, sexe: formSexe, role: formRole, boutique_id, dossier: formDossier }, ...prev]);
+      toast.success("Utilisateur créé (local)");
+      setOpen(false);
+    }
+  };
+
+  const fmtSize = (b: number) => b < 1024 ? `${b} o` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} Ko` : `${(b / 1024 / 1024).toFixed(1)} Mo`;
+
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    const target = toDelete;
+    setToDelete(null);
+    try {
+      await deleteUserApi(target.id);
+      setUsers((prev) => prev.filter((u) => u.id !== target.id));
+      toast.success(`${target.full_name} supprimé`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Échec de la suppression");
+    }
+  };
 
     try {
       await api.delete(`/user/${toDelete.id}`);
@@ -279,6 +341,7 @@ const UsersManager = ({}: Props) => {
 
             <p className="text-sm text-muted-foreground">
               {users.length} membre{users.length > 1 ? "s" : ""}
+              {loading ? "Chargement…" : `${users.length} membre${users.length > 1 ? "s" : ""} · liés à une boutique`}
             </p>
           </div>
         </div>
@@ -447,6 +510,8 @@ const UsersManager = ({}: Props) => {
 
               <DialogFooter>
                 <Button type="submit" variant="hero">
+                <Button type="submit" variant="hero" disabled={submitting}>
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {editing ? "Enregistrer" : "Créer"}
                 </Button>
               </DialogFooter>
