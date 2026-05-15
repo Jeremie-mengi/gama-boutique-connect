@@ -149,7 +149,7 @@ export const STATUTS: { value: StatutArticle; label: string }[] = [
 export interface Promotion {
   id: string;
   libelle: string;
-  pourcentage: number; // 0-100
+  pourcentage: number;
   dateDebut: string;
   dateFin: string;
 }

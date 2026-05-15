@@ -1,57 +1,125 @@
-import { useState } from "react";
-import { Plus, Store, Pencil, Trash2, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Store, Pencil, Trash2, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import type { Boutique } from "@/lib/mockData";
+import { useBoutiqueStore } from "@/store/boutiqueStore";
+import { useAuthStore } from "@/store/authStore";
 
 interface Props {
-  boutiques: Boutique[];
-  setBoutiques: React.Dispatch<React.SetStateAction<Boutique[]>>;
   onSelect?: (id: string) => void;
-  countsFor?: (id: string) => { articles: number; ventes: number };
 }
 
-const BoutiquesManager = ({ boutiques, setBoutiques, onSelect, countsFor }: Props) => {
+const BoutiquesManager = ({ onSelect }: Props) => {
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Boutique | null>(null);
+  const [editing, setEditing] = useState<any>(null);
+  const [loadingDelete, setLoadingDelete] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Store actions and state
+  const { 
+    boutiques, 
+    loading, 
+    error, 
+    fetchBoutiques, 
+    createBoutique, 
+    updateBoutique, 
+    deleteBoutique 
+  } = useBoutiqueStore();
+
+  // Get auth state
+  const { user, isAuthenticated } = useAuthStore();
+
+  // Fetch boutiques on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchBoutiques();
+    }
+  }, [isAuthenticated, fetchBoutiques]);
+
+  // Show error toast if any
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const nom = String(fd.get("nom") ?? "").trim();
-    if (!nom) { toast.error("Le nom est requis"); return; }
-    const payload = {
-      nom,
-      adresse: String(fd.get("adresse") ?? "").trim() || null,
-      telephone: String(fd.get("telephone") ?? "").trim() || null,
-    };
-    if (editing) {
-      setBoutiques((prev) => prev.map((b) => (b.id === editing.id ? { ...b, ...payload } : b)));
-      toast.success("Boutique mise à jour");
-    } else {
-      setBoutiques((prev) => [{ id: crypto.randomUUID(), ...payload }, ...prev]);
-      toast.success("Boutique créée");
+    const emplacement = String(fd.get("emplacement") ?? "").trim();
+    
+    if (!nom) { 
+      toast.error("Le nom est requis"); 
+      return; 
     }
-    setOpen(false);
-    setEditing(null);
+    
+    if (!emplacement) { 
+      toast.error("L'emplacement est requis"); 
+      return; 
+    }
+
+    try {
+      if (editing) {
+        // Update boutique
+        await updateBoutique(editing.id, {
+          nom,
+          emplacement,
+        });
+        toast.success("Boutique mise à jour");
+      } else {
+        // Create boutique - userId will be taken from auth store automatically
+        await createBoutique({
+          nom,
+          emplacement,
+        });
+        toast.success("Boutique créée");
+      }
+      setOpen(false);
+      setEditing(null);
+    } catch (err: any) {
+      toast.error(err.message || "Une erreur est survenue");
+    }
   };
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (!confirm("Supprimer cette boutique ?")) return;
-    setBoutiques((prev) => prev.filter((b) => b.id !== id));
-    toast.success("Boutique supprimée");
+    
+    setLoadingDelete(id);
+    try {
+      await deleteBoutique(id);
+      toast.success("Boutique supprimée");
+    } catch (err: any) {
+      toast.error(err.message || "Erreur lors de la suppression");
+    } finally {
+      setLoadingDelete(null);
+    }
   };
 
-  const handleEdit = (e: React.MouseEvent, b: Boutique) => {
+  const handleEdit = (e: React.MouseEvent, b: any) => {
     e.stopPropagation();
     setEditing(b);
     setOpen(true);
   };
+
+  // Helper to get counts from the store
+  const getCountsFor = (id: string) => {
+    const boutique = useBoutiqueStore.getState().getBoutiqueById(id);
+    if (!boutique) return { articles: 0, ventes: 0 };
+    return {
+      articles: boutique.articles?.length || 0,
+      ventes: boutique.ventes?.length || 0,
+    };
+  };
+
+  // Don't show if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <Card className="p-6 shadow-card border-border/60">
@@ -63,14 +131,17 @@ const BoutiquesManager = ({ boutiques, setBoutiques, onSelect, countsFor }: Prop
           <div>
             <h2 className="font-bold text-xl">Boutiques</h2>
             <p className="text-sm text-muted-foreground">
-              {boutiques.length} boutique{boutiques.length > 1 ? "s" : ""} · cliquez pour voir le détail
+              {loading ? "Chargement..." : `${boutiques.length} boutique${boutiques.length > 1 ? "s" : ""} · cliquez pour voir le détail`}
             </p>
           </div>
         </div>
 
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
           <DialogTrigger asChild>
-            <Button variant="hero"><Plus className="h-4 w-4" /> Nouvelle boutique</Button>
+            <Button variant="hero" disabled={loading}>
+              <Plus className="h-4 w-4" /> 
+              Nouvelle boutique
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -79,30 +150,45 @@ const BoutiquesManager = ({ boutiques, setBoutiques, onSelect, countsFor }: Prop
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="nom">Nom *</Label>
-                <Input id="nom" name="nom" required defaultValue={editing?.nom ?? ""} placeholder="GAMA Plateau" />
+                <Input 
+                  id="nom" 
+                  name="nom" 
+                  required 
+                  defaultValue={editing?.nom ?? ""} 
+                  placeholder="GAMA Plateau" 
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="adresse">Adresse</Label>
-                <Input id="adresse" name="adresse" defaultValue={editing?.adresse ?? ""} placeholder="Avenue de la Mode" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="telephone">Téléphone</Label>
-                <Input id="telephone" name="telephone" defaultValue={editing?.telephone ?? ""} placeholder="+225 ..." />
+                <Label htmlFor="emplacement">Emplacement *</Label>
+                <Input 
+                  id="emplacement" 
+                  name="emplacement" 
+                  required 
+                  defaultValue={editing?.emplacement ?? editing?.adresse ?? ""} 
+                  placeholder="Avenue de la Mode" 
+                />
               </div>
               <DialogFooter>
-                <Button type="submit" variant="hero">{editing ? "Enregistrer" : "Créer"}</Button>
+                <Button type="submit" variant="hero" disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {editing ? "Enregistrer" : "Créer"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {boutiques.length === 0 ? (
+      {loading && boutiques.length === 0 ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : boutiques.length === 0 ? (
         <p className="text-muted-foreground text-sm py-8 text-center">Aucune boutique.</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {boutiques.map((b) => {
-            const c = countsFor?.(b.id);
+            const c = getCountsFor(b.id);
             return (
               <button
                 key={b.id}
@@ -116,25 +202,49 @@ const BoutiquesManager = ({ boutiques, setBoutiques, onSelect, countsFor }: Prop
                     </div>
                     <div className="min-w-0">
                       <div className="font-semibold truncate">{b.nom}</div>
-                      <div className="text-xs text-muted-foreground truncate">{b.adresse ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {b.adresse || b.emplacement || "—"}
+                      </div>
                     </div>
                   </div>
                   <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition" />
                 </div>
-                {c && (
-                  <div className="flex gap-3 text-xs">
-                    <span className="rounded-md bg-muted/40 px-2 py-1"><b>{c.articles}</b> articles</span>
-                    <span className="rounded-md bg-muted/40 px-2 py-1"><b>{c.ventes}</b> ventes</span>
-                  </div>
-                )}
+                
+                <div className="flex gap-3 text-xs">
+                  <span className="rounded-md bg-muted/40 px-2 py-1">
+                    <b>{c.articles}</b> articles
+                  </span>
+                  <span className="rounded-md bg-muted/40 px-2 py-1">
+                    <b>{c.ventes}</b> ventes
+                  </span>
+                </div>
+                
                 <div className="flex items-center justify-between pt-2 border-t border-border/60">
-                  <span className="text-xs text-muted-foreground">{b.telephone ?? "—"}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {b.user?.telephone || b.telephone || "—"}
+                  </span>
                   <div className="flex">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleEdit(e, b)}>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={(e) => handleEdit(e, b)}
+                      disabled={loadingDelete === b.id}
+                    >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleDelete(e, b.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={(e) => handleDelete(e, b.id)}
+                      disabled={loadingDelete === b.id}
+                    >
+                      {loadingDelete === b.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
                     </Button>
                   </div>
                 </div>
