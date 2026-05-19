@@ -4,8 +4,6 @@ import { useAuthStore } from "@/store/authStore";
 const API_URL = import.meta.env.DEV
   ? "/api"
   : import.meta.env.VITE_API_URL;
-// API backend GAMA Boutique
-const API_URL = "https://backgama-production.up.railway.app/gama-boutique/v1";
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -15,6 +13,7 @@ export const api = axios.create({
   },
 });
 
+// REQUEST INTERCEPTOR
 api.interceptors.request.use(
   (config) => {
     const token = useAuthStore.getState().accessToken;
@@ -25,26 +24,16 @@ api.interceptors.request.use(
 
     console.log(
       "API CALL →",
-      config.baseURL + config.url
+      (config.baseURL ?? "") + (config.url ?? "")
     );
 
     return config;
   },
 
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
-// Inject Authorization header (user connecté) sur chaque requête
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token && config.headers) {
-    config.headers.set?.("Authorization", `Bearer ${token}`);
-  }
-  console.log("API CALL →", (config.baseURL ?? "") + (config.url ?? ""));
-  return config;
-});
 
+// RESPONSE INTERCEPTOR
 api.interceptors.response.use(
   (response) => response,
 
@@ -55,9 +44,7 @@ api.interceptors.response.use(
     );
 
     if (error.response?.status === 401) {
-      console.warn(
-        "Session expirée ou non autorisée"
-      );
+      console.warn("Session expirée ou non autorisée");
     }
 
     return Promise.reject(error);

@@ -9,13 +9,16 @@ import {
   X,
   Pencil,
   Trash2,
+  Loader2,
 } from "lucide-react";
 
 import { api } from "@/lib/api";
+import {
+  fetchAllUsers,
+  updateUserApi,
+  deleteUserApi,
+} from "@/lib/usersApi";
 
-import { Plus, Users, Shield, Upload, FileText, X, Pencil, Trash2, Loader2 } from "lucide-react";
-import { fetchAllUsers, updateUserApi, deleteUserApi } from "@/lib/usersApi";
-// (DossierCell upload retiré : l'upload se fait à la création.)
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,10 +85,7 @@ interface ApiUser {
   boutique: Boutique[];
 }
 
-// Props modifiées : plus besoin de boutiques en props
-interface Props {
-  // boutiques: Boutique[]; // Supprimé car on les récupère via l'API
-}
+interface Props {}
 
 const ROLES = [
   {
@@ -113,37 +113,42 @@ const SEXES = [
 
 const UsersManager = ({}: Props) => {
   const [users, setUsers] = useState<ApiUser[]>([]);
-  const [boutiques, setBoutiques] = useState<Boutique[]>([]); // Nouvel état pour les boutiques
+
+  const [boutiques, setBoutiques] = useState<Boutique[]>([]);
+
   const [loading, setLoading] = useState(false);
-  const [loadingBoutiques, setLoadingBoutiques] = useState(false); // État de chargement des boutiques
+
+  const [loadingBoutiques, setLoadingBoutiques] =
+    useState(false);
+
+  const [submitting, setSubmitting] = useState(false);
 
   const [open, setOpen] = useState(false);
 
-  const [editing, setEditing] = useState<ApiUser | null>(null);
+  const [editing, setEditing] =
+    useState<ApiUser | null>(null);
 
-  const [toDelete, setToDelete] = useState<ApiUser | null>(null);
+  const [toDelete, setToDelete] =
+    useState<ApiUser | null>(null);
 
-  const [formRole, setFormRole] = useState("VENDEUR");
+  const [formRole, setFormRole] =
+    useState("VENDEUR");
 
-  const [formBoutique, setFormBoutique] = useState<string>("none");
+  const [formBoutique, setFormBoutique] =
+    useState<string>("none");
 
-  const [formSexe, setFormSexe] = useState("Masculin");
+  const [formSexe, setFormSexe] =
+    useState("Masculin");
 
-  const [formDossier, setFormDossier] = useState<File | null>(null);
+  const [formDossier, setFormDossier] =
+    useState<File | null>(null);
 
-  const dossierInputRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const dossierInputRef =
+    useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    fetchAllUsers()
-      .then((list) => { if (mounted) setUsers(list); })
-      .catch((e) => toast.error(e?.response?.data?.message || "Impossible de charger les utilisateurs"))
-      .finally(() => { if (mounted) setLoading(false); });
-    return () => { mounted = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchUsers();
+    fetchBoutiques();
   }, []);
 
   const fetchUsers = async () => {
@@ -152,34 +157,37 @@ const UsersManager = ({}: Props) => {
 
       const response = await api.get("/user/all");
 
-      setUsers(response.data.data);
+      setUsers(response.data.data || []);
     } catch (error) {
       console.error(error);
 
-      toast.error("Erreur lors du chargement des utilisateurs");
+      toast.error(
+        "Erreur lors du chargement des utilisateurs"
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Nouvelle fonction pour récupérer les boutiques
   const fetchBoutiques = async () => {
     try {
       setLoadingBoutiques(true);
+
       const response = await api.get("/boutiques/all");
-      setBoutiques(response.data.data || response.data);
+
+      setBoutiques(
+        response.data.data || response.data || []
+      );
     } catch (error) {
       console.error(error);
-      toast.error("Erreur lors du chargement des boutiques");
+
+      toast.error(
+        "Erreur lors du chargement des boutiques"
+      );
     } finally {
       setLoadingBoutiques(false);
     }
   };
-
-  useEffect(() => {
-    fetchUsers();
-    fetchBoutiques(); // Charger les boutiques au montage du composant
-  }, []);
 
   const openCreate = () => {
     setEditing(null);
@@ -200,14 +208,20 @@ const UsersManager = ({}: Props) => {
 
     setFormRole(u.role);
 
-    setFormBoutique(u.boutique?.[0]?.id ?? "none");
+    setFormBoutique(
+      u.boutique?.[0]?.id ?? "none"
+    );
 
     setFormSexe(u.sexe);
+
+    setFormDossier(null);
 
     setOpen(true);
   };
 
-  const onPickDossier = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onPickDossier = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
 
     if (!file) return;
@@ -217,21 +231,30 @@ const UsersManager = ({}: Props) => {
     e.target.value = "";
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ) => {
     e.preventDefault();
 
     try {
+      setSubmitting(true);
+
       const fd = new FormData(e.currentTarget);
 
-      const nom = String(fd.get("nom") ?? "").trim();
+      const nom = String(
+        fd.get("nom") ?? ""
+      ).trim();
 
-      const email = String(fd.get("email") ?? "").trim();
+      const email = String(
+        fd.get("email") ?? ""
+      ).trim();
 
-      const telephone = String(fd.get("telephone") ?? "").trim();
+      const telephone = String(
+        fd.get("telephone") ?? ""
+      ).trim();
 
       if (!nom || !email) {
         toast.error("Nom et email requis");
-
         return;
       }
 
@@ -241,11 +264,14 @@ const UsersManager = ({}: Props) => {
         telephone,
         sexe: formSexe,
         role: formRole,
-        boutiqueId: formBoutique === "none" ? null : formBoutique,
+        boutiqueId:
+          formBoutique === "none"
+            ? null
+            : formBoutique,
       };
 
       if (editing) {
-        await api.patch(`/user/${editing.id}`, payload);
+        await updateUserApi(editing.id, payload);
 
         toast.success("Utilisateur modifié");
       } else {
@@ -257,74 +283,40 @@ const UsersManager = ({}: Props) => {
       setOpen(false);
 
       fetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
 
-      toast.error("Une erreur est survenue");
+      toast.error(
+        error?.response?.data?.message ||
+          "Une erreur est survenue"
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
     if (!toDelete) return;
-    const fd = new FormData(e.currentTarget);
-    const full_name = String(fd.get("full_name") ?? "").trim();
-    const email = String(fd.get("email") ?? "").trim();
-    const telephone = String(fd.get("telephone") ?? "").trim() || null;
-    if (!full_name || !email) {
-      toast.error("Nom et email requis");
-      return;
-    }
-    const boutique_id = formBoutique === "none" ? null : formBoutique;
-    if (editing) {
-      setSubmitting(true);
-      try {
-        const updated = await updateUserApi(editing.id, {
-          nom: full_name, email, telephone, sexe: formSexe, role: formRole,
-        });
-        setUsers((prev) => prev.map((u) => u.id === editing.id
-          ? { ...u, ...updated, boutique_id, dossier: formDossier }
-          : u));
-        toast.success("Utilisateur modifié");
-        setOpen(false);
-      } catch (err: any) {
-        toast.error(err?.response?.data?.message || "Échec de la modification");
-      } finally {
-        setSubmitting(false);
-      }
-    } else {
-      setUsers((prev) => [{ id: crypto.randomUUID(), full_name, email, telephone, sexe: formSexe, role: formRole, boutique_id, dossier: formDossier }, ...prev]);
-      toast.success("Utilisateur créé (local)");
-      setOpen(false);
-    }
-  };
 
-  const fmtSize = (b: number) => b < 1024 ? `${b} o` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} Ko` : `${(b / 1024 / 1024).toFixed(1)} Mo`;
-
-  const handleDelete = async () => {
-    if (!toDelete) return;
     const target = toDelete;
+
     setToDelete(null);
+
     try {
       await deleteUserApi(target.id);
-      setUsers((prev) => prev.filter((u) => u.id !== target.id));
-      toast.success(`${target.full_name} supprimé`);
+
+      setUsers((prev) =>
+        prev.filter((u) => u.id !== target.id)
+      );
+
+      toast.success(
+        `${target.nom} supprimé`
+      );
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Échec de la suppression");
-    }
-  };
-
-    try {
-      await api.delete(`/user/${toDelete.id}`);
-
-      toast.success("Utilisateur supprimé");
-
-      setToDelete(null);
-
-      fetchUsers();
-    } catch (error) {
-      console.error(error);
-
-      toast.error("Erreur lors de la suppression");
+      toast.error(
+        err?.response?.data?.message ||
+          "Échec de la suppression"
+      );
     }
   };
 
@@ -337,63 +329,91 @@ const UsersManager = ({}: Props) => {
           </div>
 
           <div>
-            <h2 className="font-bold text-xl">Utilisateurs</h2>
+            <h2 className="font-bold text-xl">
+              Utilisateurs
+            </h2>
 
             <p className="text-sm text-muted-foreground">
-              {users.length} membre{users.length > 1 ? "s" : ""}
-              {loading ? "Chargement…" : `${users.length} membre${users.length > 1 ? "s" : ""} · liés à une boutique`}
+              {loading
+                ? "Chargement..."
+                : `${users.length} membre${
+                    users.length > 1 ? "s" : ""
+                  }`}
             </p>
           </div>
         </div>
 
-        <Button variant="hero" onClick={openCreate}>
+        <Button
+          variant="hero"
+          onClick={openCreate}
+        >
           <Plus className="h-4 w-4" />
           Nouvel utilisateur
         </Button>
 
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+          open={open}
+          onOpenChange={setOpen}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editing ? "Modifier l'utilisateur" : "Nouvel utilisateur"}
+                {editing
+                  ? "Modifier l'utilisateur"
+                  : "Nouvel utilisateur"}
               </DialogTitle>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
               <div className="space-y-2">
-                <Label htmlFor="nom">Nom complet *</Label>
+                <Label htmlFor="nom">
+                  Nom complet *
+                </Label>
 
                 <Input
                   id="nom"
                   name="nom"
                   required
-                  defaultValue={editing?.nom ?? ""}
+                  defaultValue={
+                    editing?.nom ?? ""
+                  }
                   placeholder="Jeremie Mengi"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">
+                  Email *
+                </Label>
 
                 <Input
                   id="email"
                   name="email"
                   type="email"
                   required
-                  defaultValue={editing?.email ?? ""}
+                  defaultValue={
+                    editing?.email ?? ""
+                  }
                   placeholder="jm@gmail.com"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="telephone">Téléphone</Label>
+                  <Label htmlFor="telephone">
+                    Téléphone
+                  </Label>
 
                   <Input
                     id="telephone"
                     name="telephone"
                     type="tel"
-                    defaultValue={editing?.telephone ?? ""}
+                    defaultValue={
+                      editing?.telephone ?? ""
+                    }
                     placeholder="099999999"
                   />
                 </div>
@@ -401,14 +421,22 @@ const UsersManager = ({}: Props) => {
                 <div className="space-y-2">
                   <Label>Sexe</Label>
 
-                  <Select value={formSexe} onValueChange={setFormSexe}>
+                  <Select
+                    value={formSexe}
+                    onValueChange={
+                      setFormSexe
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
 
                     <SelectContent>
                       {SEXES.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>
+                        <SelectItem
+                          key={s.value}
+                          value={s.value}
+                        >
                           {s.label}
                         </SelectItem>
                       ))}
@@ -420,14 +448,22 @@ const UsersManager = ({}: Props) => {
               <div className="space-y-2">
                 <Label>Rôle</Label>
 
-                <Select value={formRole} onValueChange={setFormRole}>
+                <Select
+                  value={formRole}
+                  onValueChange={
+                    setFormRole
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
 
                   <SelectContent>
                     {ROLES.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>
+                      <SelectItem
+                        key={r.value}
+                        value={r.value}
+                      >
                         {r.label}
                       </SelectItem>
                     ))}
@@ -438,21 +474,34 @@ const UsersManager = ({}: Props) => {
               <div className="space-y-2">
                 <Label>Boutique</Label>
 
-                <Select value={formBoutique} onValueChange={setFormBoutique}>
+                <Select
+                  value={formBoutique}
+                  onValueChange={
+                    setFormBoutique
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="none">Aucune</SelectItem>
+                    <SelectItem value="none">
+                      Aucune
+                    </SelectItem>
 
                     {loadingBoutiques ? (
-                      <SelectItem value="loading" disabled>
+                      <SelectItem
+                        value="loading"
+                        disabled
+                      >
                         Chargement...
                       </SelectItem>
                     ) : (
                       boutiques.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
+                        <SelectItem
+                          key={b.id}
+                          value={b.id}
+                        >
                           {b.nom}
                         </SelectItem>
                       ))
@@ -462,7 +511,9 @@ const UsersManager = ({}: Props) => {
               </div>
 
               <div className="space-y-2">
-                <Label>Dossier de l'agent</Label>
+                <Label>
+                  Dossier de l'agent
+                </Label>
 
                 <input
                   ref={dossierInputRef}
@@ -481,7 +532,11 @@ const UsersManager = ({}: Props) => {
                       </div>
 
                       <div className="text-[10px] text-muted-foreground">
-                        {(formDossier.size / 1024).toFixed(1)} Ko
+                        {(
+                          formDossier.size /
+                          1024
+                        ).toFixed(1)}{" "}
+                        Ko
                       </div>
                     </div>
 
@@ -490,7 +545,9 @@ const UsersManager = ({}: Props) => {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => setFormDossier(null)}
+                      onClick={() =>
+                        setFormDossier(null)
+                      }
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -500,7 +557,9 @@ const UsersManager = ({}: Props) => {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => dossierInputRef.current?.click()}
+                    onClick={() =>
+                      dossierInputRef.current?.click()
+                    }
                   >
                     <Upload className="h-3.5 w-3.5" />
                     Uploader un fichier
@@ -509,28 +568,46 @@ const UsersManager = ({}: Props) => {
               </div>
 
               <DialogFooter>
-                <Button type="submit" variant="hero">
-                <Button type="submit" variant="hero" disabled={submitting}>
-                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {editing ? "Enregistrer" : "Créer"}
+                <Button
+                  type="submit"
+                  variant="hero"
+                  disabled={submitting}
+                >
+                  {submitting && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+
+                  {editing
+                    ? "Enregistrer"
+                    : "Créer"}
                 </Button>
               </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
 
-        <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialog
+          open={!!toDelete}
+          onOpenChange={(o) =>
+            !o && setToDelete(null)
+          }
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Supprimer cet utilisateur ?</AlertDialogTitle>
+              <AlertDialogTitle>
+                Supprimer cet utilisateur ?
+              </AlertDialogTitle>
 
               <AlertDialogDescription>
-                {toDelete?.nom} sera supprimé définitivement.
+                {toDelete?.nom} sera supprimé
+                définitivement.
               </AlertDialogDescription>
             </AlertDialogHeader>
 
             <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogCancel>
+                Annuler
+              </AlertDialogCancel>
 
               <AlertDialogAction
                 onClick={handleDelete}
@@ -560,44 +637,69 @@ const UsersManager = ({}: Props) => {
 
                 <TableHead>Email</TableHead>
 
-                <TableHead>Téléphone</TableHead>
+                <TableHead>
+                  Téléphone
+                </TableHead>
 
                 <TableHead>Sexe</TableHead>
 
                 <TableHead>Rôle</TableHead>
 
-                <TableHead>Boutique</TableHead>
+                <TableHead>
+                  Boutique
+                </TableHead>
 
-                <TableHead>Dossier</TableHead>
+                <TableHead>
+                  Dossier
+                </TableHead>
 
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-right">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
               {users.map((u) => (
                 <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.nom}</TableCell>
+                  <TableCell className="font-medium">
+                    {u.nom}
+                  </TableCell>
 
-                  <TableCell>{u.email}</TableCell>
+                  <TableCell>
+                    {u.email}
+                  </TableCell>
 
-                  <TableCell>{u.telephone || "—"}</TableCell>
+                  <TableCell>
+                    {u.telephone || "—"}
+                  </TableCell>
 
-                  <TableCell>{u.sexe}</TableCell>
+                  <TableCell>
+                    {u.sexe}
+                  </TableCell>
 
                   <TableCell>
                     <Badge
-                      variant={u.role === "ADMIN" ? "default" : "secondary"}
+                      variant={
+                        u.role === "ADMIN"
+                          ? "default"
+                          : "secondary"
+                      }
                       className="gap-1"
                     >
-                      {u.role === "ADMIN" && <Shield className="h-3 w-3" />}
+                      {u.role ===
+                        "ADMIN" && (
+                        <Shield className="h-3 w-3" />
+                      )}
 
                       {u.role}
                     </Badge>
                   </TableCell>
 
                   <TableCell>
-                    {u.boutique?.length > 0 ? u.boutique[0].nom : "Aucune"}
+                    {u.boutique?.length > 0
+                      ? u.boutique[0].nom
+                      : "Aucune"}
                   </TableCell>
 
                   <TableCell>
@@ -620,7 +722,9 @@ const UsersManager = ({}: Props) => {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => openEdit(u)}
+                        onClick={() =>
+                          openEdit(u)
+                        }
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
@@ -629,7 +733,9 @@ const UsersManager = ({}: Props) => {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => setToDelete(u)}
+                        onClick={() =>
+                          setToDelete(u)
+                        }
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
