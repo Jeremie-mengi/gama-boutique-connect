@@ -165,8 +165,8 @@ const InventaireSection = () => {
               ]}
               disabled={filtered.length === 0}
             />
-            <ArticleExcelImport />
-            <ArticleFormDialog />
+            <ArticleExcelImport boutiques={boutiques as any} onImport={(imported) => imported.forEach((a) => addArticle(a as any))} />
+            <ArticleFormDialog boutiques={boutiques as any} onCreate={(a) => addArticle(a as any)} />
           </div>
         </div>
 
