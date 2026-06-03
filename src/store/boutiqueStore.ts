@@ -45,18 +45,22 @@ interface UpdateBoutiqueDTO {
 
 interface BoutiqueStore {
   boutiques: Boutique[];
+  articles: Article[];
   loading: boolean;
+  articlesLoading: boolean;
   error: string | null;
 
   /* actions */
   fetchBoutiques: () => Promise<void>;
+  fetchArticles: () => Promise<void>;
+  addArticle: (a: Article) => void;
   createBoutique: (data: Omit<CreateBoutiqueDTO, 'userId'>) => Promise<void>;
   updateBoutique: (id: string, data: UpdateBoutiqueDTO) => Promise<void>;
   deleteBoutique: (id: string) => Promise<void>;
   getBoutiqueById: (id: string) => Boutique | undefined;
 
   /* computed helpers */
-  getAllArticles: () => any[];
+  getAllArticles: () => Article[];
   getAllVentes: () => any[];
   getAllInventaires: () => any[];
 }
