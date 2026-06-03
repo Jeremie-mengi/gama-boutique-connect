@@ -124,8 +124,7 @@ const ArticleCard = ({ a, boutiqueName, onZoom }: { a: Article; boutiqueName: st
 };
 
 const ArticlesSection = () => {
-  const { boutiques, getAllArticles, loading } = useBoutiqueStore();
-  const [articles, setArticles] = useState<Article[]>([]);
+  const { boutiques, articles: storeArticles, articlesLoading, fetchArticles, addArticle } = useBoutiqueStore();
   
   const [boutique, setBoutique] = useState<string>("all");
   const [statut, setStatut] = useState<StatutArticle | "all">("all");
@@ -145,11 +144,12 @@ const ArticlesSection = () => {
 
   const [zoomArticle, setZoomArticle] = useState<Article | null>(null);
 
-  // Load articles from store
+  // Load articles from API
   useEffect(() => {
-    const allArticles = getAllArticles();
-    setArticles(allArticles);
-  }, [boutiques, getAllArticles]);
+    fetchArticles();
+  }, [fetchArticles]);
+
+  const articles = storeArticles as unknown as Article[];
 
   const nameOf = (id: string) => boutiques.find((b) => b.id === id)?.nom ?? "—";
 
@@ -177,7 +177,7 @@ const ArticlesSection = () => {
     setPrixOp("all"); setPrixVal(""); setRestOp("all"); setRestVal(""); setVendOp("all"); setVendVal("");
   };
 
-  if (loading && articles.length === 0) {
+  if (articlesLoading && articles.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -219,8 +219,8 @@ const ArticlesSection = () => {
               qrAccessor={(a: Article) => `${a.code}|${a.nom}`}
               disabled={filtered.length === 0}
             />
-            <ArticleExcelImport />
-            <ArticleFormDialog />
+            <ArticleExcelImport boutiques={boutiques as any} onImport={(imported) => imported.forEach((a) => addArticle(a as any))} />
+            <ArticleFormDialog boutiques={boutiques as any} onCreate={(a) => addArticle(a as any)} />
           </div>
         </div>
 

@@ -52,8 +52,7 @@ const numFilter = (val: number, op: NumOp, ref: string) => {
 };
 
 const InventaireSection = () => {
-  const { boutiques, getAllArticles, loading } = useBoutiqueStore();
-  const [articles, setArticles] = useState<Article[]>([]);
+  const { boutiques, articles: storeArticles, articlesLoading, fetchArticles, addArticle } = useBoutiqueStore();
   
   const today = new Date();
   const past = new Date(today.getTime() - 30 * 86400000);
@@ -77,11 +76,13 @@ const InventaireSection = () => {
   const [vendVal, setVendVal] = useState("");
   const [zoomArticle, setZoomArticle] = useState<Article | null>(null);
 
-  // Load articles from store
+  // Load articles from API
   useEffect(() => {
-    const allArticles = getAllArticles();
-    setArticles(allArticles);
-  }, [boutiques, getAllArticles]);
+    fetchArticles();
+  }, [fetchArticles]);
+
+  const articles = storeArticles as unknown as Article[];
+  const loading = articlesLoading;
 
   const filtered = useMemo(() => {
     const fromTs = +new Date(from);
@@ -164,8 +165,8 @@ const InventaireSection = () => {
               ]}
               disabled={filtered.length === 0}
             />
-            <ArticleExcelImport />
-            <ArticleFormDialog />
+            <ArticleExcelImport boutiques={boutiques as any} onImport={(imported) => imported.forEach((a) => addArticle(a as any))} />
+            <ArticleFormDialog boutiques={boutiques as any} onCreate={(a) => addArticle(a as any)} />
           </div>
         </div>
 

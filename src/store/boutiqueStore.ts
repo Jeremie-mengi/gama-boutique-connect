@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { api } from "@/lib/api";
 import { useAuthStore } from "./authStore";
+import { fetchAllArticlesApi, apiArticleToLocal } from "@/lib/articlesApi";
+import type { Article } from "@/lib/mockData";
 
 /* =========================
    TYPES
@@ -43,18 +45,22 @@ interface UpdateBoutiqueDTO {
 
 interface BoutiqueStore {
   boutiques: Boutique[];
+  articles: Article[];
   loading: boolean;
+  articlesLoading: boolean;
   error: string | null;
 
   /* actions */
   fetchBoutiques: () => Promise<void>;
+  fetchArticles: () => Promise<void>;
+  addArticle: (a: Article) => void;
   createBoutique: (data: Omit<CreateBoutiqueDTO, 'userId'>) => Promise<void>;
   updateBoutique: (id: string, data: UpdateBoutiqueDTO) => Promise<void>;
   deleteBoutique: (id: string) => Promise<void>;
   getBoutiqueById: (id: string) => Boutique | undefined;
 
   /* computed helpers */
-  getAllArticles: () => any[];
+  getAllArticles: () => Article[];
   getAllVentes: () => any[];
   getAllInventaires: () => any[];
 }
@@ -66,8 +72,30 @@ interface BoutiqueStore {
 export const useBoutiqueStore = create<BoutiqueStore>(
   (set, get) => ({
     boutiques: [],
+    articles: [],
     loading: false,
+    articlesLoading: false,
     error: null,
+
+    /* =========================
+       FETCH ALL ARTICLES
+    ========================= */
+    fetchArticles: async () => {
+      try {
+        set({ articlesLoading: true, error: null });
+        const apiArticles = await fetchAllArticlesApi();
+        const articles = apiArticles.map((a) => apiArticleToLocal(a));
+        set({ articles });
+      } catch (error: any) {
+        console.error("fetchArticles error:", error);
+        set({ error: error?.message || "Erreur lors du chargement des articles" });
+      } finally {
+        set({ articlesLoading: false });
+      }
+    },
+
+    addArticle: (a) => set({ articles: [a, ...get().articles] }),
+
 
     /* =========================
        FETCH ALL BOUTIQUES
