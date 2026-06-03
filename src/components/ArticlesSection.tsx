@@ -124,8 +124,7 @@ const ArticleCard = ({ a, boutiqueName, onZoom }: { a: Article; boutiqueName: st
 };
 
 const ArticlesSection = () => {
-  const { boutiques, getAllArticles, loading } = useBoutiqueStore();
-  const [articles, setArticles] = useState<Article[]>([]);
+  const { boutiques, articles: storeArticles, articlesLoading, fetchArticles, addArticle } = useBoutiqueStore();
   
   const [boutique, setBoutique] = useState<string>("all");
   const [statut, setStatut] = useState<StatutArticle | "all">("all");
@@ -145,11 +144,12 @@ const ArticlesSection = () => {
 
   const [zoomArticle, setZoomArticle] = useState<Article | null>(null);
 
-  // Load articles from store
+  // Load articles from API
   useEffect(() => {
-    const allArticles = getAllArticles();
-    setArticles(allArticles);
-  }, [boutiques, getAllArticles]);
+    fetchArticles();
+  }, [fetchArticles]);
+
+  const articles = storeArticles as unknown as Article[];
 
   const nameOf = (id: string) => boutiques.find((b) => b.id === id)?.nom ?? "—";
 
