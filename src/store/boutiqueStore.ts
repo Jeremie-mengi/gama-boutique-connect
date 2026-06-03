@@ -72,8 +72,30 @@ interface BoutiqueStore {
 export const useBoutiqueStore = create<BoutiqueStore>(
   (set, get) => ({
     boutiques: [],
+    articles: [],
     loading: false,
+    articlesLoading: false,
     error: null,
+
+    /* =========================
+       FETCH ALL ARTICLES
+    ========================= */
+    fetchArticles: async () => {
+      try {
+        set({ articlesLoading: true, error: null });
+        const apiArticles = await fetchAllArticlesApi();
+        const articles = apiArticles.map((a) => apiArticleToLocal(a));
+        set({ articles });
+      } catch (error: any) {
+        console.error("fetchArticles error:", error);
+        set({ error: error?.message || "Erreur lors du chargement des articles" });
+      } finally {
+        set({ articlesLoading: false });
+      }
+    },
+
+    addArticle: (a) => set({ articles: [a, ...get().articles] }),
+
 
     /* =========================
        FETCH ALL BOUTIQUES
