@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { api } from "@/lib/api";
 import { useAuthStore } from "./authStore";
+import { fetchAllArticlesApi, apiArticleToLocal } from "@/lib/articlesApi";
+import type { Article } from "@/lib/mockData";
 
 /* =========================
    TYPES
