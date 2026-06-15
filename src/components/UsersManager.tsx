@@ -262,7 +262,7 @@ const UsersManager = ({}: Props) => {
         nom,
         email,
         telephone,
-        sexe: formSexe,
+        sexe: formSexe as any,
         role: formRole,
         boutiqueId:
           formBoutique === "none"

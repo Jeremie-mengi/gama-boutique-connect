@@ -107,16 +107,11 @@ const Dashboard = () => {
         return (
           <div className="space-y-6">
             <BoutiqueSelector
-              boutiques={boutiques}
               value={selectedBoutique}
               onChange={setSelectedBoutique}
             />
-            <StatsCards
-              users={fUsers}
-              boutiques={fBoutiques}
-              ventes={fVentes}
-            />
-            <VentesParBoutique boutiques={fBoutiques} ventes={fVentes} />
+            <StatsCards />
+            <VentesParBoutique />
             {selectedBoutiqueObj && (
               <BoutiqueDetail
                 boutique={selectedBoutiqueObj}
@@ -144,29 +139,16 @@ const Dashboard = () => {
         }
         return (
           <BoutiquesManager
-            boutiques={boutiques}
-            setBoutiques={setBoutiques}
             onSelect={setOpenedBoutiqueId}
-            countsFor={(id) => ({
-              articles: articles.filter((a) => a.boutique_id === id).length,
-              ventes: ventes.filter((v) => v.boutique_id === id).length,
-            })}
           />
         );
       }
       case "users":
-        return (
-          <UsersManager
-            users={users}
-            setUsers={setUsers}
-            boutiques={boutiques}
-          />
-        );
+        return <UsersManager />;
       case "ventes":
         return (
           <div className="space-y-6">
             <BoutiqueSelector
-              boutiques={boutiques}
               value={selectedBoutique}
               onChange={setSelectedBoutique}
             />
@@ -183,7 +165,6 @@ const Dashboard = () => {
         return (
           <div className="space-y-6">
             <BoutiqueSelector
-              boutiques={boutiques}
               value={selectedBoutique}
               onChange={setSelectedBoutique}
             />
@@ -196,21 +177,9 @@ const Dashboard = () => {
           </div>
         );
       case "inventaire":
-        return (
-          <InventaireSection
-            boutiques={boutiques}
-            articles={articles}
-            setArticles={setArticles}
-          />
-        );
+        return <InventaireSection />;
       case "articles":
-        return (
-          <ArticlesSection
-            boutiques={boutiques}
-            articles={articles}
-            setArticles={setArticles}
-          />
-        );
+        return <ArticlesSection />;
       case "rapport":
         return <RapportSection />;
     }

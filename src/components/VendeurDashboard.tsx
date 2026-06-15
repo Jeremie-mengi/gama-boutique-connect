@@ -65,7 +65,7 @@ const VendeurDashboard = ({
           </div>
         );
       case "articles":
-        return <ArticlesSection boutiques={myBoutiques} articles={articles} setArticles={setArticles} />;
+        return <ArticlesSection />;
       case "ventes":
         return <VentesTable boutiques={myBoutiques} ventes={ventes} articles={articles} showBoutique={false} />;
       case "finances":
