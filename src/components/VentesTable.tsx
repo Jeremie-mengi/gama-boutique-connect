@@ -73,6 +73,11 @@ const VentesTable = ({ boutiques, ventes, articles = [], title = "Tableau des ve
                 <div className="text-sm font-bold text-primary">{formatMoney(total, dev as any)}</div>
               </div>
             ))}
+            {onCreate && (
+              <Button onClick={() => setOpenForm(true)} className="gap-1">
+                <Plus className="h-4 w-4" /> Nouvelle vente
+              </Button>
+            )}
             <ExportButtons
               title={title}
               subtitle={`${sorted.length} transaction(s)`}
@@ -143,6 +148,17 @@ const VentesTable = ({ boutiques, ventes, articles = [], title = "Tableau des ve
         boutiques={boutiques}
         articles={articles}
       />
+
+      {onCreate && (
+        <VenteFormDialog
+          open={openForm}
+          onOpenChange={setOpenForm}
+          boutiques={boutiques}
+          articles={articles}
+          defaultBoutiqueId={defaultBoutiqueId}
+          onCreate={onCreate}
+        />
+      )}
     </div>
   );
 };

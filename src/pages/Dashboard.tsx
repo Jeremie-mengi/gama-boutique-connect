@@ -51,7 +51,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [boutiques, setBoutiques] = useState<Boutique[]>(mockBoutiques);
   const [users, setUsers] = useState<AppUser[]>(mockUsers);
-  const [ventes] = useState(mockVentes);
+  const [ventes, setVentes] = useState(mockVentes);
   const [depenses, setDepenses] = useState(mockDepenses);
   const [articles, setArticles] = useState(mockArticles);
   const [selectedBoutique, setSelectedBoutique] = useState<string>("all");
@@ -174,6 +174,8 @@ const Dashboard = () => {
               boutiques={boutiques}
               ventes={fVentes}
               articles={articles}
+              defaultBoutiqueId={isAll ? undefined : selectedBoutique}
+              onCreate={(newVentes) => setVentes((prev) => [...newVentes, ...prev])}
             />
           </div>
         );
