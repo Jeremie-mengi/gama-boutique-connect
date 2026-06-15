@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Receipt, ImageOff } from "lucide-react";
+import { Receipt, ImageOff, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import VentesFilters, { applyVentesFilters, emptyFilters, type VentesFilterState } from "./VentesFilters";
 import VenteDetailDialog from "./VenteDetailDialog";
+import VenteFormDialog from "./VenteFormDialog";
 import type { Article, Boutique, Vente } from "@/lib/mockData";
 import { formatMoney } from "@/lib/mockData";
 import ExportButtons from "./ExportButtons";
@@ -16,13 +18,16 @@ interface Props {
   articles?: Article[];
   title?: string;
   showBoutique?: boolean;
+  onCreate?: (ventes: Vente[]) => void;
+  defaultBoutiqueId?: string;
 }
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "2-digit" });
 
-const VentesTable = ({ boutiques, ventes, articles = [], title = "Tableau des ventes", showBoutique = true }: Props) => {
+const VentesTable = ({ boutiques, ventes, articles = [], title = "Tableau des ventes", showBoutique = true, onCreate, defaultBoutiqueId }: Props) => {
   const [filters, setFilters] = useState<VentesFilterState>(emptyFilters);
   const [openVente, setOpenVente] = useState<Vente | null>(null);
+  const [openForm, setOpenForm] = useState(false);
 
   const filtered = applyVentesFilters(ventes, filters);
   const sorted = [...filtered].sort((a, b) => +new Date(b.date) - +new Date(a.date));
@@ -68,6 +73,11 @@ const VentesTable = ({ boutiques, ventes, articles = [], title = "Tableau des ve
                 <div className="text-sm font-bold text-primary">{formatMoney(total, dev as any)}</div>
               </div>
             ))}
+            {onCreate && (
+              <Button onClick={() => setOpenForm(true)} className="gap-1">
+                <Plus className="h-4 w-4" /> Nouvelle vente
+              </Button>
+            )}
             <ExportButtons
               title={title}
               subtitle={`${sorted.length} transaction(s)`}
@@ -138,6 +148,17 @@ const VentesTable = ({ boutiques, ventes, articles = [], title = "Tableau des ve
         boutiques={boutiques}
         articles={articles}
       />
+
+      {onCreate && (
+        <VenteFormDialog
+          open={openForm}
+          onOpenChange={setOpenForm}
+          boutiques={boutiques}
+          articles={articles}
+          defaultBoutiqueId={defaultBoutiqueId}
+          onCreate={onCreate}
+        />
+      )}
     </div>
   );
 };
