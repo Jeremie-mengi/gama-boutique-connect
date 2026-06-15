@@ -175,11 +175,15 @@ const VenteFormDialog = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {DEVISES.map((d) => (
-                  <SelectItem key={d} value={d}>
-                    {d}
-                  </SelectItem>
-                ))}
+                {DEVISES.map((d: any) => {
+                  const val = typeof d === "string" ? d : d.value;
+                  const label = typeof d === "string" ? d : d.label ?? d.value;
+                  return (
+                    <SelectItem key={val} value={val}>
+                      {label}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
