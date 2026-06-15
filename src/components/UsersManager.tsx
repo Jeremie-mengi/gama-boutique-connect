@@ -262,8 +262,8 @@ const UsersManager = ({}: Props) => {
         nom,
         email,
         telephone,
-        sexe: formSexe,
-        role: formRole,
+        sexe: formSexe as any,
+        role: formRole as any,
         boutiqueId:
           formBoutique === "none"
             ? null

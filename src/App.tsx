@@ -28,32 +28,10 @@ const App = () => (
 
       <BrowserRouter>
         <Routes>
-
-          {/* Redirection vers auth */}
-          <Route path="/" element={<Navigate to="/auth" replace />} />
-
-          {/* Auth */}
+          <Route path="/" element={<Dashboard />} />
           <Route path="/auth" element={<Auth />} />
-
-          {/* Routes protégées */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/user-boutique"
-            element={
-              <ProtectedRoute>
-                <UserBoutique />
-              </ProtectedRoute>
-            }
-          />
-
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/user-boutique" element={<UserBoutique />} />
           <Route path="*" element={<NotFound />} />
 
         </Routes>
